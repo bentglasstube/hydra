@@ -9,7 +9,7 @@ struct Size { float size = 0; };
 struct Velocity { float vel = 0; };
 struct Angle { float angle = 0; };
 
-struct MaxVelocity { float max = 3.0f; };
+struct MaxVelocity { float max = 3000.0f; };
 
 struct Accelleration { float accel = 0.0f; };
 struct Rotation { float rot = 0.0f; };

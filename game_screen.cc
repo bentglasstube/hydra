@@ -146,8 +146,8 @@ void GameScreen::user_input(const Input& input) {
     float& rot = players.get<Rotation>(p).rot;
 
     accel = 0.0f;
-    if (input.key_held(Input::Button::Up)) accel += 10.0f;
-    if (input.key_held(Input::Button::Down)) accel -= 2.0f;
+    if (input.key_held(Input::Button::Up)) accel += 1000.0f;
+    if (input.key_held(Input::Button::Down)) accel -= 200.0f;
 
     rot = 0.0f;
     if (input.key_held(Input::Button::Left)) rot -= 1.0f;
