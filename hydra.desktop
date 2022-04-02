@@ -1,0 +1,9 @@
+[Desktop Entry]
+
+Type=Application
+Version=1.0
+Name=hydra
+Terminal=false
+Icon=icon
+Exec=hydra
+Categories=Game;
