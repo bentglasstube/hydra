@@ -38,12 +38,17 @@ bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
       }
 
       user_input(input);
+      firing(t);
 
       // movement systems
       acceleration(t);
       rotation(t);
       max_velocity();
       movement(t);
+
+
+      // cleanup
+      kill_oob();
 
       if (reg_.view<PlayerControl>().size() == 0) {
         // player must be dead
@@ -71,6 +76,21 @@ bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
   }
 
   return true;
+}
+
+namespace {
+  constexpr bool oob(pos p) {
+    if (p.x < 0 || p.x > kConfig.graphics.width) return true;
+    if (p.y < 0 || p.y > kConfig.graphics.height) return true;
+    return false;
+  }
+}
+
+void GameScreen::kill_oob() {
+  auto view = reg_.view<const Position, const KillOffScreen>();
+  for (const auto e : view) {
+    if (oob(view.get<const Position>(e).p)) reg_.destroy(e);
+  }
 }
 
 namespace {
@@ -117,6 +137,7 @@ namespace {
 
 void GameScreen::draw(Graphics& graphics) const {
   draw_ships(graphics);
+  draw_bullets(graphics);
   draw_overlay(graphics);
 }
 
@@ -127,6 +148,14 @@ void GameScreen::draw_ships(Graphics& graphics) const {
     const float size = ships.get<const Size>(s).size;
     const float angle = reg_.get<const Angle>(s).angle;
     draw_poly(graphics, get_ship_shape(p, angle, size), ships.get<const Color>(s).color);
+  }
+}
+
+void GameScreen::draw_bullets(Graphics& graphics) const {
+  const auto bullets = reg_.view<const Position, const Bullet>();
+  for (const auto b : bullets) {
+    const pos p = bullets.get<const Position>(b).p;
+    graphics.draw_circle({ (int)p.x, (int)p.y}, 2, 0xffffffff, true);
   }
 }
 
@@ -167,6 +196,12 @@ void GameScreen::user_input(const Input& input) {
     rot = 0.0f;
     if (input.key_held(Input::Button::Left)) rot -= 1.0f;
     if (input.key_held(Input::Button::Right)) rot += 1.0f;
+
+    if (input.key_held(Input::Button::A)) {
+      static_cast<void>(reg_.get_or_emplace<Firing>(p));
+    } else {
+      reg_.remove<Firing>(p);
+    }
   }
 }
 
@@ -218,5 +253,27 @@ void GameScreen::expiring(float t) {
     Timer& tm = view.get<Timer>(e);
     tm.elapsed += t;
     if (tm.expire && tm.elapsed > tm.lifetime) reg_.destroy(e);
+  }
+}
+
+void GameScreen::firing(float t) {
+  auto sources = reg_.view<Firing, const Position, const Angle, const Velocity>();
+  for (const auto s : sources) {
+    Firing& gun = sources.get<Firing>(s);
+
+    gun.time += t;
+    if (gun.time > gun.rate) {
+      gun.time -= gun.rate;
+      const pos p = sources.get<const Position>(s).p;
+      const float a = sources.get<const Angle>(s).angle;
+
+      const auto bullet = reg_.create();
+      reg_.emplace<Bullet>(bullet, s);
+      reg_.emplace<Position>(bullet, p + pos::polar(5, a));
+      reg_.emplace<Angle>(bullet, a);
+      reg_.emplace<Velocity>(bullet, sources.get<const Velocity>(s).vel + 250);
+      reg_.emplace<MaxVelocity>(bullet);
+      reg_.emplace<KillOffScreen>(bullet);
+    }
   }
 }

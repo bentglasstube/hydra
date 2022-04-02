@@ -37,10 +37,11 @@ class GameScreen : public Screen {
     void movement(float t);
 
     void expiring(float t);
+    void firing(float t);
 
-    void kill_dead(Audio& audio);
     void kill_oob();
 
     void draw_ships(Graphics& graphics) const;
+    void draw_bullets(Graphics& graphics) const;
     void draw_overlay(Graphics& graphics) const;
 };

@@ -17,6 +17,9 @@ struct Rotation { float rot = 0.0f; };
 struct Color { uint32_t color = 0x006496ff; };
 
 struct PlayerControl {};
+
+struct Bullet { entt::entity source; };
+struct Firing { float rate = 0.25f, time = rate; };
 struct ScreenWrap {};
 struct Triangle {};
 
@@ -28,3 +31,5 @@ struct Timer {
 };
 
 struct FadeOut {};
+
+struct KillOffScreen {};
