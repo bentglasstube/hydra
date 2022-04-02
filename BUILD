@@ -11,8 +11,16 @@ cc_binary(
     srcs = ["main.cc"],
     deps = [
         "@libgam//:game",
+        ":config",
         ":screens",
     ],
+)
+
+cc_library(
+    name = "config",
+    srcs = ["config.cc"],
+    hdrs = ["config.h"],
+    deps = ["@libgam//:game"],
 )
 
 cc_library(

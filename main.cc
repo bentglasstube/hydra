@@ -1,5 +1,6 @@
 #include "game.h"
 
+#include "config.h"
 #include "title_screen.h"
 
 #ifdef __EMSCRIPTEN__
@@ -11,15 +12,7 @@ void step(void* game) {
 #endif
 
 int main(int, char**) {
-  Game::Config config;
-
-  config.graphics.title = "hydra";
-  config.graphics.width = 512;
-  config.graphics.height = 448;
-  config.graphics.scale = 2;
-  config.graphics.fullscreen = false;
-
-  Game game(config);
+  Game game(kConfig);
   Screen *start = new TitleScreen();
 
 #ifdef __EMSCRIPTEN__
