@@ -9,5 +9,5 @@ git_repository(
 git_repository(
     name = "entt",
     remote = "https://github.com/skypjack/entt",
-    commit = "0b3e3fd19adbb8b56b92908493559a7eda7ce644",
+    commit = "7ecb65a14162fbd80e5b7e1b4b087189d3f5a546",
 )
