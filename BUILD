@@ -26,14 +26,30 @@ cc_library(
 cc_library(
     name = "screens",
     srcs = [
+        "game_screen.cc",
         "title_screen.cc",
     ],
     hdrs = [
+        "game_screen.h",
         "title_screen.h",
     ],
     deps = [
         "@libgam//:screen",
         "@libgam//:text",
         "@entt//:entt",
+        ":components",
+        ":config",
+        ":geometry",
     ],
+)
+
+cc_library(
+    name = "components",
+    hdrs = ["components.h"],
+    deps = [":geometry"],
+)
+
+cc_library(
+    name = "geometry",
+    hdrs = ["geometry.h"],
 )

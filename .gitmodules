@@ -1,3 +1,6 @@
 [submodule "gam"]
 	path = gam
 	url = https://git.sr.ht/~bentglasstube/gam
+[submodule "entt"]
+	path = entt
+	url = https://github.com/skypjack/entt

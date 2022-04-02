@@ -3,19 +3,22 @@ ifeq ($(UNAME), Windows)
 	CROSS=x86_64-w64-mingw32.static-
 endif
 
-SOURCES=$(wildcard *.cc) $(wildcard gam/*.cc)
+NAME=hydra
+GAM_DEPS=audio game graphics input rect screen text util
+
+GAM_SOURCES=$(patsubst %,gam/%.cc,$(GAM_DEPS))
+SOURCES=$(wildcard *.cc) $(GAM_SOURCES)
 CONTENT=$(wildcard content/*)
 ICONS=icon.png
 BUILDDIR=$(CROSS)output
 OBJECTS=$(patsubst %.cc,$(BUILDDIR)/%.o,$(SOURCES))
-NAME=hydra
 VERSION=$(shell git describe --tags --dirty)
 
 CC=$(CROSS)g++
 LD=$(CROSS)ld
 AR=$(CROSS)ar
 PKG_CONFIG=$(CROSS)pkg-config
-CFLAGS=-O3 --std=c++17 -Wall -Wextra -Werror -pedantic -I gam -DNDEBUG
+CFLAGS=-O3 --std=c++17 -Wall -Wextra -Werror -pedantic -I gam -I entt/src -DNDEBUG
 EMFLAGS=-s USE_SDL=2 -s USE_SDL_MIXER=2 -s USE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS='["png"]' -s USE_OGG=1 -s USE_VORBIS=1 -s ALLOW_MEMORY_GROWTH=1 -fno-rtti -fno-exceptions
 EXTRA=
 

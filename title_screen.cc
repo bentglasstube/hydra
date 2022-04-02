@@ -1,5 +1,7 @@
 #include "title_screen.h"
 
+#include "game_screen.h"
+
 TitleScreen::TitleScreen() : text_("text.png") {}
 
 bool TitleScreen::update(const Input& input, Audio&, unsigned int) {
@@ -11,5 +13,5 @@ void TitleScreen::draw(Graphics& graphics) const {
 }
 
 Screen* TitleScreen::next_screen() const {
-  return nullptr;
+  return new GameScreen;
 }
