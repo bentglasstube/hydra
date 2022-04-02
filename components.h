@@ -18,6 +18,7 @@ struct Color { uint32_t color = 0x006496ff; };
 
 struct PlayerControl {};
 struct ScreenWrap {};
+struct Triangle {};
 
 struct Timer {
   float lifetime = 1.0f;

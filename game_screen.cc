@@ -9,14 +9,19 @@
 GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png"), state_(state::playing), score_(0) {
   const auto player = reg_.create();
   reg_.emplace<Color>(player, 0xd8ff00ff);
+  reg_.emplace<Triangle>(player);
+  reg_.emplace<Size>(player, 20.0f);
+
   reg_.emplace<Position>(player, pos{ kConfig.graphics.width / 2.0f, kConfig.graphics.height / 2.0f });
+
   reg_.emplace<PlayerControl>(player);
   reg_.emplace<ScreenWrap>(player);
+
   reg_.emplace<Acceleration>(player);
   reg_.emplace<Velocity>(player, 0.0f);
   reg_.emplace<Angle>(player, 0.0f);
   reg_.emplace<Rotation>(player);
-  reg_.emplace<Size>(player, 20.0f);
+
   reg_.emplace<Health>(player, 100);
 }
 
@@ -69,8 +74,13 @@ bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
 }
 
 namespace {
-  rect get_rect(const pos& p, float size) {
-    return { p.x - size / 2, p.y - size / 2, p.x + size / 2, p.y + size / 2 };
+  const polygon get_ship_shape(const pos& p, float rot, float size) {
+    return {
+      p + pos::polar(size, rot),
+      p + pos::polar(size / 3.0f, rot + M_PI / 2),
+      p + pos::polar(size / 3.0f, rot - M_PI / 2),
+    };
+
   }
 
   uint32_t color_opacity(uint32_t color, float opacity) {
@@ -95,6 +105,14 @@ namespace {
     graphics.draw_rect(p1, { p1.x + (int)((p2.x - p1.x) * fullness), p2.y }, color, true);
     graphics.draw_rect(p1, p2, color, false);
   }
+
+  void draw_poly(Graphics& graphics, const polygon& poly, uint32_t color) {
+    for (size_t i = 1; i < poly.points.size(); ++i) {
+      const Graphics::Point p1 = { (int)poly.points[i - 1].x, (int)poly.points[i - 1].y };
+      const Graphics::Point p2 = { (int)poly.points[i].x, (int)poly.points[i].y };
+      graphics.draw_line(p1, p2, color);
+    }
+  }
 }
 
 void GameScreen::draw(Graphics& graphics) const {
@@ -103,16 +121,12 @@ void GameScreen::draw(Graphics& graphics) const {
 }
 
 void GameScreen::draw_ships(Graphics& graphics) const {
-  const auto ships = reg_.view<const Position, const Size, const Color, const Angle>();
+  const auto ships = reg_.view<const Position, const Size, const Color, const Angle, const Triangle>();
   for (const auto s : ships) {
     const pos p = ships.get<const Position>(s).p;
     const float size = ships.get<const Size>(s).size;
-    const rect r = get_rect(p, size);
-    const bool filled = reg_.all_of<PlayerControl>(s);
-
-    graphics.draw_rect({ (int)r.left, (int)r.top }, { (int)r.right, (int)r.bottom }, ships.get<const Color>(s).color, filled);
     const float angle = reg_.get<const Angle>(s).angle;
-    graphics.draw_line({ (int)p.x, (int)p.y }, { (int)(p.x + size * std::cos(angle)), (int)(p.y + size * std::sin(angle)) }, 0xffffffff);
+    draw_poly(graphics, get_ship_shape(p, angle, size), ships.get<const Color>(s).color);
   }
 }
 

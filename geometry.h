@@ -1,6 +1,6 @@
 #pragma once
 
-struct polar;
+#include <vector>
 
 struct pos {
   float x = 0, y = 0;
@@ -47,4 +47,39 @@ struct rect {
     return left < p.x && right > p.x && top < p.y && bottom > p.y;
   }
 
+};
+
+namespace {
+  int orientation(pos p, pos q, pos r) {
+    const float v = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+    if (v == 0) return 0;
+    return v < 0 ? -1 : 1;
+  }
+
+  bool lines_intersect(pos p, pos q, pos r, pos s) {
+    int o1 = orientation(p, q, r);
+    int o2 = orientation(p, q, s);
+    int o3 = orientation(r, s, p);
+    int o4 = orientation(r, s, q);
+    return o1 != o2 && o3 != o4;
+  }
+}
+
+struct polygon {
+  std::vector<pos> points;
+
+  polygon(std::initializer_list<pos> p) : points(p) { points.emplace_back(points[0]); }
+  bool intersect(const polygon& other) const {
+    for (size_t i = 1; i < points.size(); ++i) {
+      for (size_t j = 1; j < other.points.size(); ++j) {
+        const pos p = points[i - 1];
+        const pos q = points[i];
+        const pos r = other.points[j - 1];
+        const pos s = other.points[j];
+
+        if (lines_intersect(p, q, r, s)) return true;
+      }
+    }
+    return false;
+  }
 };
