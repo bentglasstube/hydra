@@ -11,7 +11,7 @@ GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png"), state_(
   reg_.emplace<Color>(player, 0xd8ff00ff);
   reg_.emplace<Position>(player, pos{ kConfig.graphics.width / 2.0f, kConfig.graphics.height / 2.0f });
   reg_.emplace<PlayerControl>(player);
-  reg_.emplace<Accelleration>(player);
+  reg_.emplace<Acceleration>(player);
   reg_.emplace<Velocity>(player, 0.0f);
   reg_.emplace<Angle>(player, 0.0f);
   reg_.emplace<Rotation>(player);
@@ -34,7 +34,7 @@ bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
       user_input(input);
 
       // movement systems
-      accelleration(t);
+      acceleration(t);
       rotation(t);
       max_velocity();
       movement(t);
@@ -140,9 +140,9 @@ void GameScreen::draw_overlay(Graphics& graphics) const {
 }
 
 void GameScreen::user_input(const Input& input) {
-  auto players = reg_.view<const PlayerControl, Accelleration, Rotation>();
+  auto players = reg_.view<const PlayerControl, Acceleration, Rotation>();
   for (auto p : players) {
-    float& accel = players.get<Accelleration>(p).accel;
+    float& accel = players.get<Acceleration>(p).accel;
     float& rot = players.get<Rotation>(p).rot;
 
     accel = 0.0f;
@@ -155,11 +155,11 @@ void GameScreen::user_input(const Input& input) {
   }
 }
 
-void GameScreen::accelleration(float t) {
-  auto view = reg_.view<Velocity, const Accelleration>();
+void GameScreen::acceleration(float t) {
+  auto view = reg_.view<Velocity, const Acceleration>();
   for (const auto e : view) {
     float& vel = view.get<Velocity>(e).vel;
-    vel = (vel + view.get<const Accelleration>(e).accel * t) * 0.99;
+    vel = (vel + view.get<const Acceleration>(e).accel * t) * 0.99;
   }
 }
 

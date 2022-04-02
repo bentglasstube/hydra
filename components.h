@@ -11,7 +11,7 @@ struct Angle { float angle = 0; };
 
 struct MaxVelocity { float max = 3000.0f; };
 
-struct Accelleration { float accel = 0.0f; };
+struct Acceleration { float accel = 0.0f; };
 struct Rotation { float rot = 0.0f; };
 
 struct Color { uint32_t color = 0x006496ff; };

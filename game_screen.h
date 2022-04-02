@@ -30,7 +30,7 @@ class GameScreen : public Screen {
 
     void collision(Audio& audio);
 
-    void accelleration(float t);
+    void acceleration(float t);
     void rotation(float t);
     void stay_in_bounds();
     void max_velocity();
