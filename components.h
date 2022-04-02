@@ -17,6 +17,7 @@ struct Rotation { float rot = 0.0f; };
 struct Color { uint32_t color = 0x006496ff; };
 
 struct PlayerControl {};
+struct ScreenWrap {};
 
 struct Timer {
   float lifetime = 1.0f;

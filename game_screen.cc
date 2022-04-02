@@ -11,6 +11,7 @@ GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png"), state_(
   reg_.emplace<Color>(player, 0xd8ff00ff);
   reg_.emplace<Position>(player, pos{ kConfig.graphics.width / 2.0f, kConfig.graphics.height / 2.0f });
   reg_.emplace<PlayerControl>(player);
+  reg_.emplace<ScreenWrap>(player);
   reg_.emplace<Acceleration>(player);
   reg_.emplace<Velocity>(player, 0.0f);
   reg_.emplace<Angle>(player, 0.0f);
@@ -187,6 +188,13 @@ void GameScreen::movement(float t) {
     const float vel = view.get<const Velocity>(e).vel;
     const float angle = view.get<const Angle>(e).angle;
     p += pos::polar(vel, angle) * t;
+
+    if (reg_.all_of<ScreenWrap>(e)) {
+      while (p.x < 0) p.x += kConfig.graphics.width;
+      while (p.x > kConfig.graphics.width) p.x -= kConfig.graphics.width;
+      while (p.y < 0) p.y += kConfig.graphics.height;
+      while (p.y > kConfig.graphics.height) p.y -= kConfig.graphics.height;
+    }
   }
 }
 
