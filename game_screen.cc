@@ -21,7 +21,8 @@ GameScreen::GameScreen() :
   text_("text.png", 16),
   state_(state::playing),
   score_(0), combo_(0),
-  spawns_(3.0f), spawn_timer_(10.0f)
+  spawns_(3.0f), spawn_timer_(10.0f),
+  roid_timer_(60.0f)
 {
   const auto player = reg_.create();
   reg_.emplace<Color>(player, 0xd8ff00ff);
@@ -68,17 +69,24 @@ bool GameScreen::update(const Input& input, Audio& audio, unsigned int elapsed) 
       state_ = state::lost;
       audio.play_sample("dead.wav");
       audio.stop_music();
+      return true;
     }
 
     if (spawn_timer_ > 0) {
       spawn_timer_ -= t;
       if (spawn_timer_ < 0) {
-        if (spawns_ > 10) audio.play_sample("alert.wav");
+        if (spawns_ >= 10) audio.play_sample("alert.wav");
         spawn_drones((int)spawns_, 5000.0f);
         spawns_ -= (int)spawns_;
       }
     } else if (spawns_ >= 1.0f) {
       spawn_timer_ = 1.0f;
+    }
+
+    roid_timer_ -= t;
+    if (roid_timer_ <= 0) {
+      spawn_asteroid(5000.0f);
+      roid_timer_ += 60;
     }
 
   } else if (state_ == state::lost) {
@@ -311,7 +319,7 @@ void GameScreen::collision(Audio& audio) {
         const auto flash = reg_.create();
         reg_.emplace<Flash>(flash);
         reg_.emplace<Timer>(flash, 0.2f);
-        reg_.emplace<Color>(flash, (uint32_t)0x77000033);
+        reg_.emplace<Color>(flash, (uint32_t)0xd8ff0033);
 
         audio.play_random_sample("hurt.wav", 4);
       }
@@ -546,6 +554,7 @@ void GameScreen::spawn_asteroid(float distance) {
 
   const auto roid = spawn_asteroid_at(p, 80.0f);
   reg_.get<Angle>(roid).angle = (t - p).angle();
+  reg_.remove<ScreenWrap>(roid);
 }
 
 entt::entity GameScreen::spawn_asteroid_at(pos p, float size) {

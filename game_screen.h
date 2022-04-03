@@ -31,6 +31,7 @@ class GameScreen : public Screen {
     state state_;
     int score_, combo_, best_combo_;
     float spawns_, spawn_timer_;
+    float roid_timer_;
 
     void user_input(const Input& input);
 
