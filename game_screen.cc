@@ -18,7 +18,7 @@ namespace {
 GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png"), state_(state::playing), score_(0) {
   const auto player = reg_.create();
   reg_.emplace<Color>(player, 0xd8ff00ff);
-  reg_.emplace<Polygon>(player, make_ship_shape(20.0f));
+  reg_.emplace<Polygon>(player, make_ship_shape(15.0f));
   reg_.emplace<Position>(player, pos{ kConfig.graphics.width / 2.0f, kConfig.graphics.height / 2.0f });
 
   reg_.emplace<PlayerControl>(player);
@@ -234,8 +234,8 @@ void GameScreen::user_input(const Input& input) {
     if (input.key_held(Input::Button::Down)) accel -= 200.0f;
 
     rot = 0.0f;
-    if (input.key_held(Input::Button::Left)) rot -= 2.0f;
-    if (input.key_held(Input::Button::Right)) rot += 2.0f;
+    if (input.key_held(Input::Button::Left)) rot -= 3.0f;
+    if (input.key_held(Input::Button::Right)) rot += 3.0f;
 
     if (input.key_held(Input::Button::A)) {
       static_cast<void>(reg_.get_or_emplace<Firing>(p));
@@ -460,7 +460,7 @@ void GameScreen::firing(Audio& audio, float t) {
       reg_.emplace<Collision>(bullet);
       reg_.emplace<Position>(bullet, p + pos::polar(5, a));
       reg_.emplace<Angle>(bullet, a);
-      reg_.emplace<Velocity>(bullet, sources.get<const Velocity>(s).vel + 250.0f);
+      reg_.emplace<Velocity>(bullet, sources.get<const Velocity>(s).vel + 350.0f);
       reg_.emplace<MaxVelocity>(bullet);
       reg_.emplace<KillOffScreen>(bullet);
 
@@ -481,7 +481,7 @@ void GameScreen::spawn_drones(size_t count, float distance) {
     const auto drone = reg_.create();
     reg_.emplace<Health>(drone, 1);
     reg_.emplace<Color>(drone, c);
-    reg_.emplace<Polygon>(drone, make_ship_shape(15.0f));
+    reg_.emplace<Polygon>(drone, make_ship_shape(25.0f));
     reg_.emplace<Position>(drone, p);
     reg_.emplace<Collision>(drone);
     reg_.emplace<Velocity>(drone, 200.0f);
