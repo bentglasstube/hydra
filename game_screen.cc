@@ -282,7 +282,7 @@ void GameScreen::draw_overlay(Graphics& graphics) const {
   }
   text_.draw(graphics, std::to_string(score_), graphics.width(), 0, Text::Alignment::Right);
 
-  if (bomb_cooldown_ > 0) {
+  if (bombs_ > 0 && bomb_cooldown_ > 0) {
     text_.draw(graphics, std::to_string((int)std::ceil(bomb_cooldown_)) + "s", 0, 0);
   } else {
     for (int i = 0; i < bombs_; ++i) {
