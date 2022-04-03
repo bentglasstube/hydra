@@ -344,10 +344,10 @@ void GameScreen::stay_in_bounds() {
 
     pos v = pos::polar(vel, angle);
 
-    if (p.x < buffer) v.x += 50.0f;
-    if (p.x > kConfig.graphics.width - buffer) v.x -= 50.0f;
-    if (p.y < buffer) v.y += 50.0f;
-    if (p.y > kConfig.graphics.height - buffer) v.y -= 50.0f;
+    if (p.x < buffer) v.x = std::abs(v.x);
+    if (p.x > kConfig.graphics.width - buffer) v.x = -std::abs(v.x);
+    if (p.y < buffer) v.y = std::abs(v.y);
+    if (p.y > kConfig.graphics.height - buffer) v.y = -std::abs(v.y);
 
     vel = v.mag();
     angle = v.angle();
