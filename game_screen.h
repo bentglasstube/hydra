@@ -44,4 +44,6 @@ class GameScreen : public Screen {
     void draw_ships(Graphics& graphics) const;
     void draw_bullets(Graphics& graphics) const;
     void draw_overlay(Graphics& graphics) const;
+
+    void spawn_drones(size_t count = 1);
 };

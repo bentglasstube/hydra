@@ -23,6 +23,8 @@ GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png"), state_(
   reg_.emplace<Rotation>(player);
 
   reg_.emplace<Health>(player, 100);
+
+  spawn_drones(5);
 }
 
 bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
@@ -43,9 +45,9 @@ bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
       // movement systems
       acceleration(t);
       rotation(t);
+      stay_in_bounds();
       max_velocity();
       movement(t);
-
 
       // cleanup
       kill_oob();
@@ -221,6 +223,27 @@ void GameScreen::rotation(float t) {
   }
 }
 
+void GameScreen::stay_in_bounds() {
+  const float buffer = 25.0f;
+
+  auto view = reg_.view<const StayInBounds, const Position, Velocity, Angle>();
+  for (const auto e : view) {
+    const pos p = view.get<const Position>(e).p;
+    float& vel = view.get<Velocity>(e).vel;
+    float& angle = view.get<Angle>(e).angle;
+
+    pos v = pos::polar(vel, angle);
+
+    if (p.x < buffer) v.x += 50.0f;
+    if (p.x > kConfig.graphics.width - buffer) v.x -= 50.0f;
+    if (p.y < buffer) v.y += 50.0f;
+    if (p.y > kConfig.graphics.height - buffer) v.y -= 50.0f;
+
+    vel = v.mag();
+    angle = v.angle();
+  }
+}
+
 void GameScreen::max_velocity() {
   auto view = reg_.view<Velocity, const MaxVelocity>();
   for (const auto e : view) {
@@ -275,5 +298,27 @@ void GameScreen::firing(float t) {
       reg_.emplace<MaxVelocity>(bullet);
       reg_.emplace<KillOffScreen>(bullet);
     }
+  }
+}
+
+void GameScreen::spawn_drones(size_t count) {
+  std::uniform_int_distribution<int> px(0, kConfig.graphics.width);
+  std::uniform_int_distribution<int> py(0, kConfig.graphics.height);
+  std::uniform_real_distribution<float> angle(0, 2 * M_PI);
+
+  for (size_t i = 0; i < count; ++i) {
+    const auto drone = reg_.create();
+    const pos p = { (float)px(rng_), (float)py(rng_) };
+
+    reg_.emplace<Health>(drone, 1);
+    reg_.emplace<Color>(drone, (uint32_t)0x00ffffff);
+    reg_.emplace<Triangle>(drone);
+    reg_.emplace<Position>(drone, p);
+    reg_.emplace<Size>(drone, 15.0f);
+    reg_.emplace<Collision>(drone);
+    reg_.emplace<Velocity>(drone, 200.0f);
+    reg_.emplace<Angle>(drone, angle(rng_));
+    reg_.emplace<MaxVelocity>(drone);
+    reg_.emplace<StayInBounds>(drone);
   }
 }
