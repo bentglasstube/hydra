@@ -15,7 +15,7 @@ namespace {
   }
 }
 
-GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png"), state_(state::playing), score_(0) {
+GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png", 16), state_(state::playing), score_(0) {
   const auto player = reg_.create();
   reg_.emplace<Color>(player, 0xd8ff00ff);
   reg_.emplace<Polygon>(player, make_ship_shape(15.0f));

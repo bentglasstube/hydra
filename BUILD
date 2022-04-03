@@ -35,11 +35,13 @@ cc_library(
     ],
     deps = [
         "@libgam//:screen",
+        "@libgam//:spritemap",
         "@libgam//:text",
         "@entt//:entt",
         ":components",
         ":config",
         ":geometry",
+        ":space",
     ],
 )
 
@@ -52,4 +54,15 @@ cc_library(
 cc_library(
     name = "geometry",
     hdrs = ["geometry.h"],
+)
+
+cc_library(
+    name = "space",
+    srcs = ["space.cc"],
+    hdrs = ["space.h"],
+    deps = [
+        "@libgam//:graphics",
+        ":config",
+        ":geometry",
+    ],
 )

@@ -1,7 +1,10 @@
 #pragma once
 
 #include "screen.h"
+#include "spritemap.h"
 #include "text.h"
+
+#include "space.h"
 
 class TitleScreen : public Screen {
   public:
@@ -17,5 +20,9 @@ class TitleScreen : public Screen {
   private:
 
     Text text_;
+    SpriteMap title_;
+    Space space_;
+
+    float counter_;
 
 };
