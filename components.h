@@ -34,6 +34,7 @@ struct Timer {
 
 struct FadeOut {};
 struct Flash {};
+struct Particle {};
 
 struct Killed {};
 struct KillOffScreen {};

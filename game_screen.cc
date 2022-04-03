@@ -89,12 +89,12 @@ namespace {
 }
 
 void GameScreen::kill_dead() {
-  auto view = reg_.view<const Health, const Position>();
+  auto view = reg_.view<const Health, const Position, const Color>();
   for (const auto e : view) {
     if (view.get<const Health>(e).health <= 0) {
+      const pos p = view.get<const Position>(e).p;
       if (reg_.all_of<Crumble>(e)) {
         const float s = reg_.get<const Crumble>(e).size;
-        const pos p = view.get<const Position>(e).p;
         spawn_asteroid_at(p, s);
         spawn_asteroid_at(p, s);
         spawn_asteroid_at(p, s);
@@ -102,6 +102,7 @@ void GameScreen::kill_dead() {
         spawn_drones(2, 5000.0f);
       }
 
+      explosion(p, view.get<const Color>(e).color);
       if (reg_.all_of<Killed>(e)) ++score_;
       reg_.destroy(e);
     }
@@ -152,6 +153,7 @@ void GameScreen::draw(Graphics& graphics) const {
   draw_flash(graphics);
   draw_polys(graphics);
   draw_bullets(graphics);
+  draw_particles(graphics);
   draw_overlay(graphics);
 }
 
@@ -178,6 +180,14 @@ void GameScreen::draw_bullets(Graphics& graphics) const {
   for (const auto b : bullets) {
     const pos p = bullets.get<const Position>(b).p;
     graphics.draw_circle({ (int)p.x, (int)p.y}, 2, 0xffffffff, true);
+  }
+}
+
+void GameScreen::draw_particles(Graphics& graphics) const {
+  const auto particles = reg_.view<const Particle, const Timer, const Position, const Color>();
+  for (const auto pt : particles) {
+    const pos p = particles.get<const Position>(pt).p;
+    graphics.draw_pixel({ (int)p.x, (int)p.y }, color_opacity(particles.get<const Color>(pt).color, 1 - particles.get<const Timer>(pt).ratio()));
   }
 }
 
@@ -487,4 +497,21 @@ entt::entity GameScreen::spawn_asteroid_at(pos p, float size) {
   if (size > 10.0f) reg_.emplace<Crumble>(roid, size / 2.0f);
 
   return roid;
+}
+
+void GameScreen::explosion(const pos& p, uint32_t color) {
+  std::uniform_real_distribution<float> angle(0, 2 * M_PI);
+  std::uniform_real_distribution<float> vel(100.0f, 500.0f);
+  std::uniform_real_distribution<float> lifetime(1.5f, 4.5f);
+
+  for (size_t i = 0; i < 500; ++i) {
+    const auto pt = reg_.create();
+    reg_.emplace<Particle>(pt);
+    reg_.emplace<Timer>(pt, lifetime(rng_));
+    reg_.emplace<Position>(pt, p);
+    reg_.emplace<Color>(pt, color);
+    reg_.emplace<Velocity>(pt, vel(rng_));
+    reg_.emplace<Angle>(pt, angle(rng_));
+    reg_.emplace<StayInBounds>(pt);
+  }
 }

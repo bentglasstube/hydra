@@ -49,9 +49,11 @@ class GameScreen : public Screen {
     void draw_flash(Graphics& graphics) const;
     void draw_polys(Graphics& graphics) const;
     void draw_bullets(Graphics& graphics) const;
+    void draw_particles(Graphics& graphics) const;
     void draw_overlay(Graphics& graphics) const;
 
     void spawn_drones(size_t count, float distance);
     void spawn_asteroid(float distance);
     entt::entity spawn_asteroid_at(pos p, float size);
+    void explosion(const pos& p, uint32_t color);
 };
