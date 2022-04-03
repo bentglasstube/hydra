@@ -24,10 +24,10 @@ struct pos {
     return dx * dx + dy * dy;
   }
 
-  constexpr float angle() const { return std::atan2(y, x); }
-  constexpr float mag() const { return std::sqrt(x * x + y * y); }
+  float angle() const { return std::atan2(y, x); }
+  float mag() const { return std::sqrt(x * x + y * y); }
 
-  constexpr static pos polar(float r, float theta) { return { r * std::cos(theta), r * std::sin(theta) }; }
+  static pos polar(float r, float theta) { return { r * std::cos(theta), r * std::sin(theta) }; }
 };
 
 struct rect {
