@@ -130,8 +130,8 @@ namespace {
   }
 
   void text_box(Graphics& graphics, const Text& text, const std::string& msg) {
-    static const int width = 50;
-    static const int height = 20;
+    static const int width = 250;
+    static const int height = 40;
 
     const Graphics::Point p1 { graphics.width() / 2 - width, graphics.height() / 2 - height };
     const Graphics::Point p2 { graphics.width() / 2 + width, graphics.height() / 2 + height };
