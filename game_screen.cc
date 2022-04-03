@@ -20,7 +20,8 @@ GameScreen::GameScreen() :
   rng_(Util::random_seed()),
   text_("text.png", 16),
   state_(state::playing),
-  score_(0), spawns_(3.0f), spawn_timer_(10.0f)
+  score_(0), combo_(0),
+  spawns_(3.0f), spawn_timer_(10.0f)
 {
   const auto player = reg_.create();
   reg_.emplace<Color>(player, 0xd8ff00ff);
@@ -127,7 +128,10 @@ void GameScreen::kill_dead(Audio& audio) {
 
       explosion(p, view.get<const Color>(e).color);
       audio.play_random_sample("boom.wav", 5);
-      if (reg_.all_of<Killed>(e)) ++score_;
+      if (reg_.all_of<Killed>(e)) {
+        score_ += std::floor(100 * std::exp(combo_++ / 10.0f));
+        if (combo_ > best_combo_) best_combo_ = combo_;
+      }
       reg_.destroy(e);
     }
   }
@@ -146,16 +150,16 @@ namespace {
     return (color & 0xffffff00) | lsb;
   }
 
-  void text_box(Graphics& graphics, const Text& text, const std::string& msg) {
-    static const int width = 250;
-    static const int height = 40;
+  void text_box(Graphics& graphics, const Text& text, const std::string& msg, int lines) {
+    const int width = 250;
+    const int height = 24 + 16 * lines;
 
     const Graphics::Point p1 { graphics.width() / 2 - width, graphics.height() / 2 - height };
     const Graphics::Point p2 { graphics.width() / 2 + width, graphics.height() / 2 + height };
 
     graphics.draw_rect(p1, p2, 0x000000ff, true);
     graphics.draw_rect(p1, p2, 0xffffffff, false);
-    text.draw(graphics, msg, graphics.width() / 2, graphics.height() / 2 - 16, Text::Alignment::Center);
+    text.draw(graphics, msg, graphics.width() / 2, graphics.height() / 2 - 16 * lines, Text::Alignment::Center);
   }
 
   void health_box(Graphics& graphics, const Graphics::Point p1, const Graphics::Point p2, uint32_t color, float fullness) {
@@ -225,9 +229,19 @@ void GameScreen::draw_overlay(Graphics& graphics) const {
 
   if (state_ == state::paused) {
     graphics.draw_rect({0, 0}, {graphics.width(), graphics.height()}, 0x00000099, true);
-    text_box(graphics, text_, "Paused");
+    text_box(graphics, text_, "Paused", 1);
   } else if (state_ == state::lost) {
-    text_box(graphics, text_, "Game Over");
+    text_box(graphics, text_, "Game Over", 4);
+
+    const int y = graphics.height() / 2 - 16;
+    const int lx = graphics.width() / 2 - 224;
+    const int rx = graphics.width() / 2 + 224;
+
+    text_.draw(graphics, "Score:", lx, y);
+    text_.draw(graphics, std::to_string(score_), rx, y, Text::Alignment::Right);
+
+    text_.draw(graphics, "Best Combo:", lx, y + 40);
+    text_.draw(graphics, std::to_string(best_combo_), rx, y + 40, Text::Alignment::Right);
   }
 
   const auto players = reg_.view<const PlayerControl, const Color, const Health>();
@@ -237,6 +251,10 @@ void GameScreen::draw_overlay(Graphics& graphics) const {
     health_box(graphics, start, end, players.get<const Color>(p).color, players.get<const Health>(p).health / 100.0f);
   }
   text_.draw(graphics, std::to_string(score_), graphics.width(), 0, Text::Alignment::Right);
+
+  if (combo_ > 10) {
+    text_.draw(graphics, std::to_string(combo_) + "x Combo", graphics.width() / 2, 200, Text::Alignment::Center);
+  }
 
 #ifndef NDEBUG
   text_.draw(graphics, std::to_string(spawn_timer_), 0, 0);
@@ -281,6 +299,8 @@ void GameScreen::collision(Audio& audio) {
       if (ts.intersect(os)) {
         objects.get<Health>(o).health--;
         targets.get<Health>(t).health--;
+
+        if (reg_.all_of<PlayerControl>(o)) combo_ = 0;
 
         // knockback
         const pos op = objects.get<const Position>(o).p;
