@@ -33,6 +33,7 @@ struct Timer {
 };
 
 struct FadeOut {};
+struct Flash {};
 
 struct Killed {};
 struct KillOffScreen {};

@@ -46,6 +46,7 @@ class GameScreen : public Screen {
     void kill_dead();
     void kill_oob();
 
+    void draw_flash(Graphics& graphics) const;
     void draw_polys(Graphics& graphics) const;
     void draw_bullets(Graphics& graphics) const;
     void draw_overlay(Graphics& graphics) const;

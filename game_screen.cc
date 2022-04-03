@@ -149,9 +149,18 @@ namespace {
 }
 
 void GameScreen::draw(Graphics& graphics) const {
+  draw_flash(graphics);
   draw_polys(graphics);
   draw_bullets(graphics);
   draw_overlay(graphics);
+}
+
+void GameScreen::draw_flash(Graphics& graphics) const {
+  const auto flashes = reg_.view<const Flash, const Timer, const Color>();
+  for (const auto f : flashes) {
+    const uint32_t c = color_opacity(flashes.get<const Color>(f).color, 1 - (flashes.get<const Timer>(f).ratio()));
+    graphics.draw_rect({0, 0}, {graphics.width(), graphics.height()}, c, true);
+  }
 }
 
 void GameScreen::draw_polys(Graphics& graphics) const {
@@ -232,6 +241,11 @@ void GameScreen::collision() {
       if (ts.intersect(os)) {
         objects.get<Health>(o).health--;
         targets.get<Health>(t).health--;
+
+        const auto flash = reg_.create();
+        reg_.emplace<Flash>(flash);
+        reg_.emplace<Timer>(flash, 0.2f);
+        reg_.emplace<Color>(flash, (uint32_t)0x77000033);
       }
     }
   }
