@@ -37,7 +37,7 @@ GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png"), state_(
   spawn_asteroid(200.0f);
 }
 
-bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
+bool GameScreen::update(const Input& input, Audio& audio, unsigned int elapsed) {
   const float t = elapsed / 1000.0f;
   expiring(t);
 
@@ -53,7 +53,7 @@ bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
       }
 
       user_input(input);
-      firing(t);
+      firing(audio, t);
     }
 
     // movement systems
@@ -66,10 +66,10 @@ bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
     max_velocity();
     movement(t);
 
-    collision();
+    collision(audio);
 
     // cleanup
-    kill_dead();
+    kill_dead(audio);
     kill_oob();
 
     if (reg_.view<PlayerControl>().size() == 0) {
@@ -89,7 +89,7 @@ namespace {
   }
 }
 
-void GameScreen::kill_dead() {
+void GameScreen::kill_dead(Audio& audio) {
   auto view = reg_.view<const Health, const Position, const Color>();
   for (const auto e : view) {
     if (view.get<const Health>(e).health <= 0) {
@@ -104,6 +104,7 @@ void GameScreen::kill_dead() {
       }
 
       explosion(p, view.get<const Color>(e).color);
+      audio.play_sample("boom.wav");
       if (reg_.all_of<Killed>(e)) ++score_;
       reg_.destroy(e);
     }
@@ -241,7 +242,7 @@ void GameScreen::user_input(const Input& input) {
 
 #define get_shape(v, e) v.get<const Polygon>(e).poly.translate(v.get<const Position>(e).p, v.get<const Angle>(e).angle)
 
-void GameScreen::collision() {
+void GameScreen::collision(Audio& audio) {
   auto objects = reg_.view<const PlayerControl, const Position, const Angle, const Polygon, Health>();
   for (auto o : objects) {
     const auto os = get_shape(objects, o);
@@ -264,6 +265,8 @@ void GameScreen::collision() {
         reg_.emplace<Flash>(flash);
         reg_.emplace<Timer>(flash, 0.2f);
         reg_.emplace<Color>(flash, (uint32_t)0x77000033);
+
+        audio.play_sample("hurt.wav");
       }
     }
   }
@@ -278,6 +281,7 @@ void GameScreen::collision() {
       if (ts.contains(p)) {
         int& health = targets.get<Health>(t).health;
         if (--health == 0) reg_.emplace_or_replace<Killed>(t);
+        audio.play_sample("hit.wav");
         reg_.destroy(b);
         break;
       }
@@ -435,7 +439,7 @@ void GameScreen::expiring(float t) {
   }
 }
 
-void GameScreen::firing(float t) {
+void GameScreen::firing(Audio& audio, float t) {
   auto sources = reg_.view<Firing, const Position, const Angle, const Velocity>();
   for (const auto s : sources) {
     Firing& gun = sources.get<Firing>(s);
@@ -454,6 +458,8 @@ void GameScreen::firing(float t) {
       reg_.emplace<Velocity>(bullet, sources.get<const Velocity>(s).vel + 250.0f);
       reg_.emplace<MaxVelocity>(bullet);
       reg_.emplace<KillOffScreen>(bullet);
+
+      audio.play_sample("shot.wav");
     }
   }
 }

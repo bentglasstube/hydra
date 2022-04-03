@@ -30,7 +30,7 @@ class GameScreen : public Screen {
 
     void user_input(const Input& input);
 
-    void collision();
+    void collision(Audio& audio);
 
     void acceleration(float t);
     void rotation(float t);
@@ -42,9 +42,9 @@ class GameScreen : public Screen {
     void movement(float t);
 
     void expiring(float t);
-    void firing(float t);
+    void firing(Audio& audio, float t);
 
-    void kill_dead();
+    void kill_dead(Audio& audio);
     void kill_oob();
 
     void draw_flash(Graphics& graphics) const;
