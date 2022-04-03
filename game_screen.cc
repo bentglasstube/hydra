@@ -208,8 +208,8 @@ void GameScreen::user_input(const Input& input) {
     if (input.key_held(Input::Button::Down)) accel -= 200.0f;
 
     rot = 0.0f;
-    if (input.key_held(Input::Button::Left)) rot -= 1.0f;
-    if (input.key_held(Input::Button::Right)) rot += 1.0f;
+    if (input.key_held(Input::Button::Left)) rot -= 2.0f;
+    if (input.key_held(Input::Button::Right)) rot += 2.0f;
 
     if (input.key_held(Input::Button::A)) {
       static_cast<void>(reg_.get_or_emplace<Firing>(p));
