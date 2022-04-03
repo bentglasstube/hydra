@@ -252,6 +252,12 @@ void GameScreen::collision() {
         objects.get<Health>(o).health--;
         targets.get<Health>(t).health--;
 
+        // knockback
+        const pos op = objects.get<const Position>(o).p;
+        const pos tp = targets.get<const Position>(t).p;
+        reg_.emplace_or_replace<Bump>(o, (op - tp).angle());
+        reg_.emplace_or_replace<Bump>(t, (tp - op).angle());
+
         const auto flash = reg_.create();
         reg_.emplace<Flash>(flash);
         reg_.emplace<Timer>(flash, 0.2f);
@@ -399,6 +405,13 @@ void GameScreen::movement(float t) {
       while (p.x > kConfig.graphics.width) p.x -= kConfig.graphics.width;
       while (p.y < 0) p.y += kConfig.graphics.height;
       while (p.y > kConfig.graphics.height) p.y -= kConfig.graphics.height;
+    }
+
+    if (reg_.all_of<Bump>(e)) {
+      auto& b = reg_.get<Bump>(e);
+      p += pos::polar(b.vel, b.dir);
+      b.vel -= 1.0f * t;
+      if (b.vel <= 0) reg_.remove<Bump>(e);
     }
   }
 }

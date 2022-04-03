@@ -7,6 +7,7 @@ struct Health { int health = 20; };
 struct Position { pos p; };
 struct Velocity { float vel = 0; };
 struct Angle { float angle = 0; };
+struct Bump { float dir, vel = 2.0f; };
 
 struct MaxVelocity { float max = 3000.0f; };
 
