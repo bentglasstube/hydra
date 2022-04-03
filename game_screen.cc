@@ -44,11 +44,13 @@ bool GameScreen::update(const Input& input, Audio& audio, unsigned int elapsed) 
   if (state_ == state::paused) {
     if (input.key_pressed(Input::Button::Start)) {
       state_ = state::playing;
+      audio.music_volume(10);
     }
   } else {
     if (state_ == state::playing) {
       if (input.key_pressed(Input::Button::Start)) {
         state_ = state::paused;
+        audio.music_volume(3);
         return true;
       }
 
@@ -59,6 +61,7 @@ bool GameScreen::update(const Input& input, Audio& audio, unsigned int elapsed) 
         // player must be dead
         state_ = state::lost;
         audio.play_sample("dead.wav");
+        audio.stop_music();
       }
     }
 
