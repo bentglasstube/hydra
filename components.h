@@ -20,7 +20,7 @@ struct PlayerControl {};
 struct Collision {};
 
 struct Bullet { entt::entity source; };
-struct Firing { float rate = 0.25f, time = rate; };
+struct Firing { float rate = 0.175f, time = rate; };
 struct ScreenWrap {};
 struct Triangle {};
 
