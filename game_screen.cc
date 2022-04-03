@@ -52,6 +52,7 @@ bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
       collision();
 
       // cleanup
+      kill_dead();
       kill_oob();
 
       if (reg_.view<PlayerControl>().size() == 0) {
@@ -87,6 +88,17 @@ namespace {
     if (p.x < 0 || p.x > kConfig.graphics.width) return true;
     if (p.y < 0 || p.y > kConfig.graphics.height) return true;
     return false;
+  }
+}
+
+void GameScreen::kill_dead() {
+  auto view = reg_.view<const Health>();
+  for (const auto e : view) {
+    if (view.get<const Health>(e).health <= 0) {
+      ++score_;
+      reg_.destroy(e);
+      spawn_drones(2);
+    }
   }
 }
 
@@ -221,7 +233,21 @@ void GameScreen::collision() {
         reg_.destroy(t);
         spawn_drones(1);
       }
+    }
+  }
 
+  auto bullets = reg_.view<const Bullet, const Position>();
+  for (auto b : bullets) {
+    const pos p = bullets.get<const Position>(b).p;
+    auto targets = reg_.view<const Collision, const Position, const Angle, const Size, Health>();
+    for (auto t : targets) {
+      if (t == bullets.get<const Bullet>(b).source) continue;
+      const auto ts = ship_shape(targets, t);
+      if (ts.contains(p)) {
+        targets.get<Health>(t).health--;
+        reg_.destroy(b);
+        break;
+      }
     }
   }
 }
@@ -313,7 +339,7 @@ void GameScreen::firing(float t) {
       reg_.emplace<Bullet>(bullet, s);
       reg_.emplace<Position>(bullet, p + pos::polar(5, a));
       reg_.emplace<Angle>(bullet, a);
-      reg_.emplace<Velocity>(bullet, sources.get<const Velocity>(s).vel + 250);
+      reg_.emplace<Velocity>(bullet, sources.get<const Velocity>(s).vel + 250.0f);
       reg_.emplace<MaxVelocity>(bullet);
       reg_.emplace<KillOffScreen>(bullet);
     }
@@ -337,7 +363,7 @@ void GameScreen::spawn_drones(size_t count) {
     reg_.emplace<Collision>(drone);
     reg_.emplace<Velocity>(drone, 200.0f);
     reg_.emplace<Angle>(drone, angle(rng_));
-    reg_.emplace<MaxVelocity>(drone);
+    reg_.emplace<MaxVelocity>(drone, 500.0f);
     reg_.emplace<StayInBounds>(drone);
   }
 }

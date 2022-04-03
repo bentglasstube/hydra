@@ -69,6 +69,7 @@ struct polygon {
   std::vector<pos> points;
 
   polygon(std::initializer_list<pos> p) : points(p) { points.emplace_back(points[0]); }
+
   bool intersect(const polygon& other) const {
     for (size_t i = 1; i < points.size(); ++i) {
       for (size_t j = 1; j < other.points.size(); ++j) {
@@ -82,4 +83,16 @@ struct polygon {
     }
     return false;
   }
+
+  bool contains(const pos& p) const {
+    const pos q = { 1000000.0f, p.y };
+    size_t crossings = 0;
+    for (size_t i = 1; i < points.size(); ++i) {
+      const pos r = points[i - 1];
+      const pos s = points[i];
+      if (lines_intersect(p, q, r, s)) ++crossings;
+    }
+    return crossings % 2 == 1;
+  }
+
 };
