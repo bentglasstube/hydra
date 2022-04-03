@@ -16,7 +16,12 @@ namespace {
   }
 }
 
-GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png", 16), state_(state::playing), score_(0) {
+GameScreen::GameScreen() :
+  rng_(Util::random_seed()),
+  text_("text.png", 16),
+  state_(state::playing),
+  score_(0), spawns_(3.0f), spawn_timer_(10.0f)
+{
   const auto player = reg_.create();
   reg_.emplace<Color>(player, 0xd8ff00ff);
   reg_.emplace<Polygon>(player, make_ship_shape(15.0f));
@@ -32,7 +37,6 @@ GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png", 16), sta
 
   reg_.emplace<Health>(player, 100);
 
-  spawn_drones(3, 5000.0f);
   spawn_asteroid(200.0f);
   spawn_asteroid(200.0f);
   spawn_asteroid(200.0f);
@@ -64,6 +68,18 @@ bool GameScreen::update(const Input& input, Audio& audio, unsigned int elapsed) 
       audio.play_sample("dead.wav");
       audio.stop_music();
     }
+
+    if (spawn_timer_ > 0) {
+      spawn_timer_ -= t;
+      if (spawn_timer_ < 0) {
+        if (spawns_ > 10) audio.play_sample("alert.wav");
+        spawn_drones((int)spawns_, 5000.0f);
+        spawns_ -= (int)spawns_;
+      }
+    } else if (spawns_ >= 1.0f) {
+      spawn_timer_ = 1.0f;
+    }
+
   } else if (state_ == state::lost) {
     if (input.key_pressed(Input::Button::Start)) return false;
   }
@@ -106,7 +122,7 @@ void GameScreen::kill_dead(Audio& audio) {
         spawn_asteroid_at(p, s);
         spawn_asteroid_at(p, s);
       } else {
-        spawn_drones(2, 5000.0f);
+        spawns_ += 1.5f;
       }
 
       explosion(p, view.get<const Color>(e).color);
@@ -214,14 +230,19 @@ void GameScreen::draw_overlay(Graphics& graphics) const {
     text_box(graphics, text_, "Game Over");
   }
 
-  text_.draw(graphics, std::to_string(score_), graphics.width(), 0, Text::Alignment::Right);
-
   const auto players = reg_.view<const PlayerControl, const Color, const Health>();
   for (const auto p : players) {
-    const Graphics::Point start {0, graphics.height() - 16};
+    const Graphics::Point start {0, graphics.height() - 8};
     const Graphics::Point end {graphics.width(), graphics.height()};
     health_box(graphics, start, end, players.get<const Color>(p).color, players.get<const Health>(p).health / 100.0f);
   }
+  text_.draw(graphics, std::to_string(score_), graphics.width(), 0, Text::Alignment::Right);
+
+#ifndef NDEBUG
+  text_.draw(graphics, std::to_string(spawn_timer_), 0, 0);
+  text_.draw(graphics, std::to_string(spawns_), 200, 0);
+#endif
+
 }
 
 void GameScreen::user_input(const Input& input) {
@@ -472,6 +493,7 @@ void GameScreen::firing(Audio& audio, float t) {
 
 void GameScreen::spawn_drones(size_t count, float distance) {
   std::uniform_real_distribution<float> angle(0, 2 * M_PI);
+  std::uniform_real_distribution<float> wiggle(-0.1, 0.1);
   std::uniform_real_distribution<float> hue(175, 325);
 
   const pos center = {kConfig.graphics.width / 2.0f, kConfig.graphics.height / 2.0f};
@@ -486,7 +508,7 @@ void GameScreen::spawn_drones(size_t count, float distance) {
     reg_.emplace<Position>(drone, p);
     reg_.emplace<Collision>(drone);
     reg_.emplace<Velocity>(drone, 200.0f);
-    reg_.emplace<Angle>(drone, angle(rng_));
+    reg_.emplace<Angle>(drone, (center - p).angle() + wiggle(rng_));
     reg_.emplace<MaxVelocity>(drone, 500.0f);
     reg_.emplace<StayInBounds>(drone);
     reg_.emplace<Flocking>(drone);

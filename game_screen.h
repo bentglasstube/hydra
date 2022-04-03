@@ -30,6 +30,7 @@ class GameScreen : public Screen {
 
     state state_;
     int score_;
+    float spawns_, spawn_timer_;
 
     void user_input(const Input& input);
 
