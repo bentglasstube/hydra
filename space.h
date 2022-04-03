@@ -11,15 +11,18 @@ class Space {
   public:
 
     Space(uint64_t seed);
+    void update(float t);
     void draw(Graphics& graphics) const;
 
   private:
 
     struct Star {
-      int x, y;
+      float x, y;
+      int layer;
       uint32_t color;
     };
 
-    std::mt19937 rng_;
+    mutable std::mt19937 rng_;
     std::vector<Star> stars_;
+    float offset_;
 };

@@ -4,6 +4,7 @@
 
 #include "components.h"
 #include "config.h"
+#include "title_screen.h"
 
 namespace {
   const polygon make_ship_shape(float size) {
@@ -46,42 +47,42 @@ bool GameScreen::update(const Input& input, Audio& audio, unsigned int elapsed) 
       state_ = state::playing;
       audio.music_volume(10);
     }
-  } else {
-    if (state_ == state::playing) {
-      if (input.key_pressed(Input::Button::Start)) {
-        state_ = state::paused;
-        audio.music_volume(3);
-        return true;
-      }
-
-      user_input(input);
-      firing(audio, t);
-
-      if (reg_.view<PlayerControl>().size() == 0) {
-        // player must be dead
-        state_ = state::lost;
-        audio.play_sample("dead.wav");
-        audio.stop_music();
-      }
+    return true;
+  } else if (state_ == state::playing) {
+    if (input.key_pressed(Input::Button::Start)) {
+      state_ = state::paused;
+      audio.music_volume(3);
+      return true;
     }
 
-    // movement systems
-    acceleration(t);
-    rotation(t);
-    spin(t);
-    steering(t);
-    flocking();
-    stay_in_bounds();
-    max_velocity();
-    movement(t);
+    user_input(input);
+    firing(audio, t);
 
-    collision(audio);
-
-    // cleanup
-    kill_dead(audio);
-    kill_oob();
-
+    if (reg_.view<PlayerControl>().size() == 0) {
+      // player must be dead
+      state_ = state::lost;
+      audio.play_sample("dead.wav");
+      audio.stop_music();
+    }
+  } else if (state_ == state::lost) {
+    if (input.key_pressed(Input::Button::Start)) return false;
   }
+
+  // movement systems
+  acceleration(t);
+  rotation(t);
+  spin(t);
+  steering(t);
+  flocking();
+  stay_in_bounds();
+  max_velocity();
+  movement(t);
+
+  collision(audio);
+
+  // cleanup
+  kill_dead(audio);
+  kill_oob();
 
   return true;
 }
@@ -138,7 +139,7 @@ namespace {
 
     graphics.draw_rect(p1, p2, 0x000000ff, true);
     graphics.draw_rect(p1, p2, 0xffffffff, false);
-    text.draw(graphics, msg, graphics.width() / 2, graphics.height() / 2 - 8, Text::Alignment::Center);
+    text.draw(graphics, msg, graphics.width() / 2, graphics.height() / 2 - 16, Text::Alignment::Center);
   }
 
   void health_box(Graphics& graphics, const Graphics::Point p1, const Graphics::Point p2, uint32_t color, float fullness) {
@@ -553,4 +554,8 @@ void GameScreen::explosion(const pos& p, uint32_t color) {
     reg_.emplace<Angle>(pt, angle(rng_));
     reg_.emplace<StayInBounds>(pt);
   }
+}
+
+Screen* GameScreen::next_screen() const {
+  return new TitleScreen;
 }

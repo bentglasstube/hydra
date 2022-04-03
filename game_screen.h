@@ -17,7 +17,8 @@ class GameScreen : public Screen {
     bool update(const Input& input, Audio& audio, unsigned int elasped) override;
     void draw(Graphics& graphics) const override;
 
-    std::string get_music_track() const override { return "battle.ogg"; };
+    Screen* next_screen() const override;
+    std::string get_music_track() const override { return "battle.ogg"; }
 
   private:
 

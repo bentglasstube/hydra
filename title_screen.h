@@ -4,6 +4,7 @@
 #include "spritemap.h"
 #include "text.h"
 
+#include "game_screen.h"
 #include "space.h"
 
 class TitleScreen : public Screen {
