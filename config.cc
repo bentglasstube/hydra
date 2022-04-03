@@ -2,8 +2,8 @@
 
 Config::Config() : Game::Config() {
   graphics.title = "Hydra";
-  graphics.width = 1920;
-  graphics.height = 1080;
+  graphics.width = 1280;
+  graphics.height = 720;
   graphics.intscale = false;
   graphics.fullscreen = false;
 }
