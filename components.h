@@ -23,6 +23,8 @@ struct Collision {};
 struct Crumble { float size; };
 
 struct Bullet { entt::entity source; };
+struct Bomb { float time = 5.0f; };
+struct Blast { float rad = 0.1f, fade = 1.5f; };
 struct Firing { float rate = 0.175f, time = rate; };
 struct ScreenWrap {};
 struct Polygon { polygon poly; };

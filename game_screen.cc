@@ -20,7 +20,8 @@ GameScreen::GameScreen() :
   rng_(Util::random_seed()),
   text_("text.png", 16),
   state_(state::playing),
-  score_(0), combo_(0),
+  score_(0), combo_(0), best_combo_(0),
+  bombs_(3), bomb_cooldown_(0.0f),
   spawns_(3.0f), spawn_timer_(10.0f),
   roid_timer_(60.0f)
 {
@@ -61,8 +62,9 @@ bool GameScreen::update(const Input& input, Audio& audio, unsigned int elapsed) 
       return true;
     }
 
-    user_input(input);
+    user_input(input, audio);
     firing(audio, t);
+    bombs(audio, t);
 
     if (reg_.view<PlayerControl>().size() == 0) {
       // player must be dead
@@ -85,9 +87,11 @@ bool GameScreen::update(const Input& input, Audio& audio, unsigned int elapsed) 
 
     roid_timer_ -= t;
     if (roid_timer_ <= 0) {
-      spawn_asteroid(5000.0f);
+      spawn_asteroid(2000.0f);
       roid_timer_ += 60;
     }
+
+    if (bomb_cooldown_ > 0) bomb_cooldown_ -= t;
 
   } else if (state_ == state::lost) {
     if (input.key_pressed(Input::Button::Start)) return false;
@@ -190,6 +194,7 @@ void GameScreen::draw(Graphics& graphics) const {
   draw_polys(graphics);
   draw_bullets(graphics);
   draw_particles(graphics);
+  draw_bombs(graphics);
   draw_overlay(graphics);
 }
 
@@ -228,6 +233,23 @@ void GameScreen::draw_particles(Graphics& graphics) const {
   }
 }
 
+void GameScreen::draw_bombs(Graphics& graphics) const {
+  const auto bombs = reg_.view<const Bomb, const Position>();
+  for (const auto b : bombs) {
+    const pos p = bombs.get<const Position>(b).p;
+    const float t = bombs.get<const Bomb>(b).time;
+    graphics.draw_circle({ (int)p.x, (int)p.y }, 5, 0x333333ff, true);
+    if ((int)(t * 4) % 4 == 3) graphics.draw_circle({ (int)p.x, (int)p.y }, 2, 0xff0000ff, true);
+  }
+
+  const auto blasts = reg_.view<const Blast, const Position>();
+  for (const auto b : blasts) {
+    const pos p = blasts.get<const Position>(b).p;
+    const Blast blast = blasts.get<const Blast>(b);
+    graphics.draw_circle({ (int)p.x, (int)p.y}, (int)blast.rad, color_opacity(0xffffffff, (blast.fade / 10.0f)), true);
+  }
+}
+
 void GameScreen::draw_overlay(Graphics& graphics) const {
   const auto fade = reg_.view<const FadeOut, const Timer, const Color>();
   for (const auto f : fade) {
@@ -260,18 +282,20 @@ void GameScreen::draw_overlay(Graphics& graphics) const {
   }
   text_.draw(graphics, std::to_string(score_), graphics.width(), 0, Text::Alignment::Right);
 
+  if (bomb_cooldown_ > 0) {
+    text_.draw(graphics, std::to_string((int)std::ceil(bomb_cooldown_)) + "s", 0, 0);
+  } else {
+    for (int i = 0; i < bombs_; ++i) {
+      text_.draw(graphics, "B", i * 16, 0);
+    }
+  }
+
   if (combo_ > 10) {
     text_.draw(graphics, std::to_string(combo_) + "x Combo", graphics.width() / 2, 200, Text::Alignment::Center);
   }
-
-#ifndef NDEBUG
-  text_.draw(graphics, std::to_string(spawn_timer_), 0, 0);
-  text_.draw(graphics, std::to_string(spawns_), 200, 0);
-#endif
-
 }
 
-void GameScreen::user_input(const Input& input) {
+void GameScreen::user_input(const Input& input, Audio& audio) {
   auto players = reg_.view<const PlayerControl, Acceleration, Rotation>();
   for (auto p : players) {
     float& accel = players.get<Acceleration>(p).accel;
@@ -289,6 +313,23 @@ void GameScreen::user_input(const Input& input) {
       static_cast<void>(reg_.get_or_emplace<Firing>(p));
     } else {
       reg_.remove<Firing>(p);
+    }
+
+    if (input.key_pressed(Input::Button::B) || input.key_pressed(Input::Button::Select)) {
+      if (bombs_ == 0 || bomb_cooldown_ > 0) {
+        audio.play_sample("nope.wav");
+      } else {
+        audio.play_sample("drop.wav");
+        bomb_cooldown_ = 90.0f;
+        --bombs_;
+
+        auto bomb = reg_.create();
+        reg_.emplace<Bomb>(bomb);
+        reg_.emplace<Position>(bomb, reg_.get<const Position>(p).p);
+        reg_.emplace<Angle>(bomb, reg_.get<const Angle>(p).angle);
+        reg_.emplace<Velocity>(bomb, reg_.get<const Velocity>(p).vel - 50);
+        reg_.emplace<Acceleration>(bomb);
+      }
     }
   }
 }
@@ -515,6 +556,56 @@ void GameScreen::firing(Audio& audio, float t) {
       reg_.emplace<KillOffScreen>(bullet);
 
       audio.play_random_sample("shot.wav", 3);
+    }
+  }
+}
+
+void GameScreen::bombs(Audio& audio, float t) {
+  auto bombs = reg_.view<Bomb>();
+  for (auto b : bombs) {
+    float& time = bombs.get<Bomb>(b).time;
+    const int ta = int(time);
+    time -= t;
+    const int tb = int(time);
+    if (tb != ta) audio.play_sample("beep.wav");
+
+    if (time < 0) {
+      auto blast = reg_.create();
+      reg_.emplace<Blast>(blast);
+      reg_.emplace<Position>(blast, reg_.get<Position>(b).p);
+
+      audio.play_sample("nuke.wav");
+
+      auto flash = reg_.create();
+      reg_.emplace<Flash>(flash);
+      reg_.emplace<Timer>(flash, 1.5f);
+      reg_.emplace<Color>(flash, (uint32_t)0xffffffff);
+
+      reg_.destroy(b);
+    }
+  }
+
+  auto blasts = reg_.view<Blast, const Position>();
+  for (auto b : blasts) {
+    auto& blast = blasts.get<Blast>(b);
+    const auto p = blasts.get<const Position>(b).p;
+
+    auto view = reg_.view<Health, const Position>();
+    for (auto e : view) {
+      if (view.get<const Position>(e).p.dist2(p) < blast.rad * blast.rad) {
+        view.get<Health>(e).health--;
+        // TODO maybe do this only once per entity for a set amount
+        // as it stands this will annhiliate anything in the radius
+      }
+    }
+
+    if (blast.rad < 200.0f) {
+      blast.rad += t * 400.0f;
+    } else if (blast.fade > 0) {
+      blast.rad = 200.0f;
+      blast.fade -= t;
+    } else {
+      reg_.destroy(b);
     }
   }
 }

@@ -8,7 +8,7 @@ TitleScreen::TitleScreen() : text_("text.png", 16), title_("hydra.png", 5, 200, 
 
 bool TitleScreen::update(const Input& input, Audio&, unsigned int elapsed) {
   counter_ += elapsed / 1000.0f;
-  space_.update(elapsed / 1000.0f);
+  space_.update(elapsed / 100.0f);
   return !input.any_pressed();
 }
 

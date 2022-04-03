@@ -30,10 +30,12 @@ class GameScreen : public Screen {
 
     state state_;
     int score_, combo_, best_combo_;
+    int bombs_;
+    float bomb_cooldown_;
     float spawns_, spawn_timer_;
     float roid_timer_;
 
-    void user_input(const Input& input);
+    void user_input(const Input& input, Audio& audio);
 
     void collision(Audio& audio);
 
@@ -48,6 +50,7 @@ class GameScreen : public Screen {
 
     void expiring(float t);
     void firing(Audio& audio, float t);
+    void bombs(Audio& audio, float t);
 
     void kill_dead(Audio& audio);
     void kill_oob();
@@ -56,6 +59,7 @@ class GameScreen : public Screen {
     void draw_polys(Graphics& graphics) const;
     void draw_bullets(Graphics& graphics) const;
     void draw_particles(Graphics& graphics) const;
+    void draw_bombs(Graphics& graphics) const;
     void draw_overlay(Graphics& graphics) const;
 
     void spawn_drones(size_t count, float distance);
