@@ -4,7 +4,7 @@ ifeq ($(UNAME), Windows)
 endif
 
 NAME=hydra
-GAM_DEPS=audio game graphics input rect screen text util
+GAM_DEPS=audio game graphics input rect screen spritemap text util
 
 GAM_SOURCES=$(patsubst %,gam/%.cc,$(GAM_DEPS))
 SOURCES=$(wildcard *.cc) $(GAM_SOURCES)
