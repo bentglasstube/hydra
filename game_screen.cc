@@ -49,6 +49,8 @@ bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
       max_velocity();
       movement(t);
 
+      collision();
+
       // cleanup
       kill_oob();
 
@@ -96,11 +98,11 @@ void GameScreen::kill_oob() {
 }
 
 namespace {
-  const polygon get_ship_shape(const pos& p, float rot, float size) {
+  const polygon get_ship_shape(const pos& p, float angle, float size) {
     return {
-      p + pos::polar(size, rot),
-      p + pos::polar(size / 3.0f, rot + M_PI / 2),
-      p + pos::polar(size / 3.0f, rot - M_PI / 2),
+      p + pos::polar(size, angle),
+      p + pos::polar(size / 3.0f, angle + M_PI / 2),
+      p + pos::polar(size / 3.0f, angle - M_PI / 2),
     };
 
   }
@@ -203,6 +205,32 @@ void GameScreen::user_input(const Input& input) {
       static_cast<void>(reg_.get_or_emplace<Firing>(p));
     } else {
       reg_.remove<Firing>(p);
+    }
+  }
+}
+
+void GameScreen::collision() {
+  auto players = reg_.view<const PlayerControl, const Position, const Angle, const Size, const Triangle, Health>();
+  for (auto p : players) {
+    const auto pp = players.get<const Position>(p).p;
+    const auto pa = players.get<const Angle>(p).angle;
+    const auto ps = players.get<const Size>(p).size;
+    const auto pss = get_ship_shape(pp, pa, ps);
+
+    auto targets = reg_.view<const Collision, const Position, const Angle, const Size, const Triangle>();
+    for (auto t : targets) {
+      if (p == t) continue;
+      const auto tp = targets.get<const Position>(t).p;
+      const auto ta = targets.get<const Angle>(t).angle;
+      const auto ts = targets.get<const Size>(t).size;
+      const auto tss = get_ship_shape(tp, ta, ts);
+
+      if (tss.intersect(pss)) {
+        players.get<Health>(p).health--;
+        reg_.destroy(t);
+        spawn_drones(1);
+      }
+
     }
   }
 }

@@ -28,7 +28,7 @@ class GameScreen : public Screen {
 
     void user_input(const Input& input);
 
-    void collision(Audio& audio);
+    void collision();
 
     void acceleration(float t);
     void rotation(float t);
