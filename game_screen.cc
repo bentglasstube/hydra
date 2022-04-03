@@ -31,7 +31,7 @@ GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png"), state_(
 
   reg_.emplace<Health>(player, 100);
 
-  spawn_drones(3, 10000.0f);
+  spawn_drones(3, 5000.0f);
   spawn_asteroid(200.0f);
   spawn_asteroid(200.0f);
   spawn_asteroid(200.0f);
@@ -93,14 +93,16 @@ void GameScreen::kill_dead() {
   for (const auto e : view) {
     if (view.get<const Health>(e).health <= 0) {
       if (reg_.all_of<Crumble>(e)) {
-        spawn_asteroid_at(view.get<const Position>(e).p, reg_.get<const Crumble>(e).size);
-        spawn_asteroid_at(view.get<const Position>(e).p, reg_.get<const Crumble>(e).size);
-        spawn_asteroid_at(view.get<const Position>(e).p, reg_.get<const Crumble>(e).size);
+        const float s = reg_.get<const Crumble>(e).size;
+        const pos p = view.get<const Position>(e).p;
+        spawn_asteroid_at(p, s);
+        spawn_asteroid_at(p, s);
+        spawn_asteroid_at(p, s);
       } else {
         spawn_drones(2, 5000.0f);
       }
 
-      ++score_;
+      if (reg_.all_of<Killed>(e)) ++score_;
       reg_.destroy(e);
     }
   }
@@ -219,18 +221,17 @@ void GameScreen::user_input(const Input& input) {
 #define get_shape(v, e) v.get<const Polygon>(e).poly.translate(v.get<const Position>(e).p, v.get<const Angle>(e).angle)
 
 void GameScreen::collision() {
-  auto players = reg_.view<const PlayerControl, const Position, const Angle, const Polygon, Health>();
-  for (auto p : players) {
-    const auto ps = get_shape(players, p);
-    auto targets = reg_.view<const Collision, const Position, const Angle, const Polygon>();
+  auto objects = reg_.view<const PlayerControl, const Position, const Angle, const Polygon, Health>();
+  for (auto o : objects) {
+    const auto os = get_shape(objects, o);
+    auto targets = reg_.view<const Collision, const Position, const Angle, const Polygon, Health>();
     for (auto t : targets) {
-      if (p == t) continue;
+      if (o == t) continue;
       const auto ts = get_shape(targets, t);
 
-      if (ts.intersect(ps)) {
-        players.get<Health>(p).health--;
-        reg_.destroy(t);
-        spawn_drones(1, 5000.0f);
+      if (ts.intersect(os)) {
+        objects.get<Health>(o).health--;
+        targets.get<Health>(t).health--;
       }
     }
   }
@@ -243,7 +244,8 @@ void GameScreen::collision() {
       if (t == bullets.get<const Bullet>(b).source) continue;
       const auto ts = get_shape(targets, t);
       if (ts.contains(p)) {
-        targets.get<Health>(t).health--;
+        int& health = targets.get<Health>(t).health;
+        if (--health == 0) reg_.emplace_or_replace<Killed>(t);
         reg_.destroy(b);
         break;
       }

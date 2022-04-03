@@ -34,6 +34,7 @@ struct Timer {
 
 struct FadeOut {};
 
+struct Killed {};
 struct KillOffScreen {};
 struct StayInBounds {};
 struct Flocking {};
