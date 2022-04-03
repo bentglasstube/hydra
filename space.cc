@@ -2,7 +2,7 @@
 
 #include "config.h"
 
-Space::Space(uint64_t seed) {
+Space::Space(uint64_t seed) : rng_(seed) {
   std::uniform_real_distribution<float> px(0, (float)kConfig.graphics.width);
   std::uniform_real_distribution<float> py(0, (float)kConfig.graphics.height);
   std::uniform_real_distribution<float> hue(0, 360);
