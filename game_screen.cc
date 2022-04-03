@@ -104,8 +104,9 @@ namespace {
       p + pos::polar(size / 3.0f, angle + M_PI / 2),
       p + pos::polar(size / 3.0f, angle - M_PI / 2),
     };
-
   }
+
+#define ship_shape(v, e) get_ship_shape(v.get<const Position>(e).p, v.get<const Angle>(e).angle, v.get<const Size>(e).size)
 
   uint32_t color_opacity(uint32_t color, float opacity) {
     const uint32_t lsb = (uint32_t)((color & 0xff) * std::clamp(opacity, 0.0f, 1.0f));
@@ -148,10 +149,7 @@ void GameScreen::draw(Graphics& graphics) const {
 void GameScreen::draw_ships(Graphics& graphics) const {
   const auto ships = reg_.view<const Position, const Size, const Color, const Angle, const Triangle>();
   for (const auto s : ships) {
-    const pos p = ships.get<const Position>(s).p;
-    const float size = ships.get<const Size>(s).size;
-    const float angle = reg_.get<const Angle>(s).angle;
-    draw_poly(graphics, get_ship_shape(p, angle, size), ships.get<const Color>(s).color);
+    draw_poly(graphics, ship_shape(ships, s), ships.get<const Color>(s).color);
   }
 }
 
@@ -212,20 +210,13 @@ void GameScreen::user_input(const Input& input) {
 void GameScreen::collision() {
   auto players = reg_.view<const PlayerControl, const Position, const Angle, const Size, const Triangle, Health>();
   for (auto p : players) {
-    const auto pp = players.get<const Position>(p).p;
-    const auto pa = players.get<const Angle>(p).angle;
-    const auto ps = players.get<const Size>(p).size;
-    const auto pss = get_ship_shape(pp, pa, ps);
-
+    const auto ps = ship_shape(players, p);
     auto targets = reg_.view<const Collision, const Position, const Angle, const Size, const Triangle>();
     for (auto t : targets) {
       if (p == t) continue;
-      const auto tp = targets.get<const Position>(t).p;
-      const auto ta = targets.get<const Angle>(t).angle;
-      const auto ts = targets.get<const Size>(t).size;
-      const auto tss = get_ship_shape(tp, ta, ts);
+      const auto ts = ship_shape(targets, t);
 
-      if (tss.intersect(pss)) {
+      if (ts.intersect(ps)) {
         players.get<Health>(p).health--;
         reg_.destroy(t);
         spawn_drones(1);
