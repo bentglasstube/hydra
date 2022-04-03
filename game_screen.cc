@@ -41,9 +41,12 @@ bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
   const float t = elapsed / 1000.0f;
   expiring(t);
 
-  switch (state_) {
-    case state::playing:
-
+  if (state_ == state::paused) {
+    if (input.key_pressed(Input::Button::Start)) {
+      state_ = state::playing;
+    }
+  } else {
+    if (state_ == state::playing) {
       if (input.key_pressed(Input::Button::Start)) {
         state_ = state::paused;
         return true;
@@ -51,45 +54,27 @@ bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
 
       user_input(input);
       firing(t);
+    }
 
-      // movement systems
-      acceleration(t);
-      rotation(t);
-      steering(t);
-      flocking();
-      stay_in_bounds();
-      max_velocity();
-      movement(t);
+    // movement systems
+    acceleration(t);
+    rotation(t);
+    steering(t);
+    flocking();
+    stay_in_bounds();
+    max_velocity();
+    movement(t);
 
-      collision();
+    collision();
 
-      // cleanup
-      kill_dead();
-      kill_oob();
+    // cleanup
+    kill_dead();
+    kill_oob();
 
-      if (reg_.view<PlayerControl>().size() == 0) {
-        // player must be dead
-        state_ = state::lost;
-
-        const auto fade = reg_.create();
-        reg_.emplace<FadeOut>(fade);
-        reg_.emplace<Timer>(fade, 2.5f, false);
-        reg_.emplace<Color>(fade, (uint32_t)0x000000ff);
-      }
-
-      break;
-
-    case state::paused:
-
-      if (input.key_pressed(Input::Button::Start)) {
-        state_ = state::playing;
-      }
-      break;
-
-    default:
-      // nothing to do
-      break;
-
+    if (reg_.view<PlayerControl>().size() == 0) {
+      // player must be dead
+      state_ = state::lost;
+    }
   }
 
   return true;
