@@ -34,6 +34,7 @@ class GameScreen : public Screen {
 
     void acceleration(float t);
     void rotation(float t);
+    void spin(float t);
     void steering(float t);
     void flocking();
     void stay_in_bounds();

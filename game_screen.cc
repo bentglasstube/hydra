@@ -59,6 +59,7 @@ bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
     // movement systems
     acceleration(t);
     rotation(t);
+    spin(t);
     steering(t);
     flocking();
     stay_in_bounds();
@@ -169,7 +170,8 @@ void GameScreen::draw_polys(Graphics& graphics) const {
   const auto polys = reg_.view<const Position, const Angle, const Polygon, const Color>();
   for (const auto p : polys) {
     const pos t = polys.get<const Position>(p).p;
-    const float a = polys.get<const Angle>(p).angle;
+    float a = polys.get<const Angle>(p).angle;
+    if (reg_.all_of<Spin>(p)) a += reg_.get<const Spin>(p).dir;
     const polygon s = polys.get<const Polygon>(p).poly.translate(t, a);
     draw_poly(graphics, s, polys.get<const Color>(p).color);
   }
@@ -297,6 +299,14 @@ void GameScreen::rotation(float t) {
   for (const auto e : view) {
     float &angle = view.get<Angle>(e).angle;
     angle += view.get<const Rotation>(e).rot * t;
+  }
+}
+
+void GameScreen::spin(float t) {
+  auto view = reg_.view<Spin>();
+  for (const auto e : view) {
+    auto& s = view.get<Spin>(e);
+    s.dir += s.spin * t;
   }
 }
 
@@ -489,6 +499,7 @@ entt::entity GameScreen::spawn_asteroid_at(pos p, float size) {
   std::uniform_real_distribution<float> wiggle(-size / 4.0f, size / 4.0f);
   std::uniform_real_distribution<float> vel(800.0f, 4000.0f);
   std::uniform_real_distribution<float> sat(0.0f, 0.8f);
+  std::uniform_real_distribution<float> spin(-0.75f, 0.75f);
 
   const size_t side_count = sides(rng_);
   polygon poly;
@@ -508,6 +519,7 @@ entt::entity GameScreen::spawn_asteroid_at(pos p, float size) {
   reg_.emplace<Collision>(roid);
   reg_.emplace<Velocity>(roid, vel(rng_) / size);
   reg_.emplace<Angle>(roid, angle(rng_));
+  reg_.emplace<Spin>(roid, spin(rng_));
   reg_.emplace<Health>(roid, (int)size / 10);
   if (size > 10.0f) reg_.emplace<Crumble>(roid, size / 2.0f);
 
