@@ -256,7 +256,8 @@ void GameScreen::acceleration(float t) {
   auto view = reg_.view<Velocity, const Acceleration>();
   for (const auto e : view) {
     float& vel = view.get<Velocity>(e).vel;
-    vel = (vel + view.get<const Acceleration>(e).accel * t) * 0.99;
+    const float friction = 0.01 * vel * vel;
+    vel += (view.get<const Acceleration>(e).accel - friction) * t;
   }
 }
 
