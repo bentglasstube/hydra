@@ -106,7 +106,7 @@ void GameScreen::kill_dead(Audio& audio) {
       }
 
       explosion(p, view.get<const Color>(e).color);
-      audio.play_sample("boom.wav");
+      audio.play_random_sample("boom.wav", 5);
       if (reg_.all_of<Killed>(e)) ++score_;
       reg_.destroy(e);
     }
@@ -268,7 +268,7 @@ void GameScreen::collision(Audio& audio) {
         reg_.emplace<Timer>(flash, 0.2f);
         reg_.emplace<Color>(flash, (uint32_t)0x77000033);
 
-        audio.play_sample("hurt.wav");
+        audio.play_random_sample("hurt.wav", 4);
       }
     }
   }
@@ -283,7 +283,7 @@ void GameScreen::collision(Audio& audio) {
       if (ts.contains(p)) {
         int& health = targets.get<Health>(t).health;
         if (--health == 0) reg_.emplace_or_replace<Killed>(t);
-        audio.play_sample("hit.wav");
+        audio.play_random_sample("hit.wav", 5);
         reg_.destroy(b);
         break;
       }
@@ -461,7 +461,7 @@ void GameScreen::firing(Audio& audio, float t) {
       reg_.emplace<MaxVelocity>(bullet);
       reg_.emplace<KillOffScreen>(bullet);
 
-      audio.play_sample("shot.wav");
+      audio.play_random_sample("shot.wav", 3);
     }
   }
 }
@@ -472,11 +472,12 @@ void GameScreen::spawn_drones(size_t count, float distance) {
 
   const pos center = {kConfig.graphics.width / 2.0f, kConfig.graphics.height / 2.0f};
   const pos p = center + pos::polar(distance, angle(rng_));
+  const uint32_t c = hsl{hue(rng_), 1.0f, 0.5f};
 
   for (size_t i = 0; i < count; ++i) {
     const auto drone = reg_.create();
     reg_.emplace<Health>(drone, 1);
-    reg_.emplace<Color>(drone, hsl{hue(rng_), 1.0f, 0.5f});
+    reg_.emplace<Color>(drone, c);
     reg_.emplace<Polygon>(drone, make_ship_shape(15.0f));
     reg_.emplace<Position>(drone, p);
     reg_.emplace<Collision>(drone);
