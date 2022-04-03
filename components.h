@@ -13,6 +13,7 @@ struct MaxVelocity { float max = 3000.0f; };
 
 struct Acceleration { float accel = 0.0f; };
 struct Rotation { float rot = 0.0f; };
+struct TargetDir { float target = 0.0f; };
 
 struct Color { uint32_t color = 0x006496ff; };
 
@@ -35,3 +36,4 @@ struct FadeOut {};
 
 struct KillOffScreen {};
 struct StayInBounds {};
+struct Flocking {};

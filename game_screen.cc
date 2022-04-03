@@ -24,7 +24,7 @@ GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png"), state_(
 
   reg_.emplace<Health>(player, 100);
 
-  spawn_drones(5);
+  spawn_drones(3);
 }
 
 bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
@@ -45,6 +45,8 @@ bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
       // movement systems
       acceleration(t);
       rotation(t);
+      steering(t);
+      flocking();
       stay_in_bounds();
       max_velocity();
       movement(t);
@@ -269,6 +271,62 @@ void GameScreen::rotation(float t) {
   }
 }
 
+void GameScreen::steering(float t) {
+  auto view = reg_.view<Angle, const TargetDir>();
+  for (const auto e : view) {
+    float &a = view.get<Angle>(e).angle;
+    a += std::clamp(view.get<const TargetDir>(e).target - a, -t, t);
+  }
+}
+
+void GameScreen::flocking() {
+  auto view = reg_.view<const Flocking, const Position, Velocity, const Angle>();
+  for (const auto e : view) {
+    const pos boid = view.get<const Position>(e).p;
+    const float angle = view.get<const Angle>(e).angle;
+    float& vel = view.get<Velocity>(e).vel;
+
+    size_t count = 0;
+    pos center, flock, avoid;
+
+    auto nearby = reg_.view<const Flocking, const Position, const Velocity, const Angle>();
+    for (const auto other : nearby) {
+      if (other == e) continue;
+      pos p = nearby.get<const Position>(other).p;
+      float d = p.dist2(boid);
+
+      // close enough to see
+      if (d < 75.0f * 75.0f) {
+        ++count;
+        center += p;
+        flock += pos::polar(nearby.get<const Velocity>(other).vel, nearby.get<const Angle>(other).angle);
+      }
+
+      // too close
+      if (d < 20.0f * 20.0f) avoid += boid - p;
+    }
+
+    if (count > 0) {
+      center /= count;
+      flock /= count;
+
+      const pos delta = (center - boid) * 0.005f + avoid * 0.05f + flock * 0.05f;
+      const pos v = pos::polar(vel, angle) + delta;
+
+      // only set the target direction otherwise the ships will awkwardly speed up and slow down
+      reg_.emplace_or_replace<TargetDir>(e, v.angle());
+    } else {
+      // try to find the player
+      auto players = reg_.view<const PlayerControl, const Position>();
+      for (const auto p : players) {
+        const pos seek = players.get<const Position>(p).p - boid;
+        reg_.emplace_or_replace<TargetDir>(e, seek.angle());
+        break;
+      }
+    }
+  }
+}
+
 void GameScreen::stay_in_bounds() {
   const float buffer = 25.0f;
 
@@ -366,5 +424,6 @@ void GameScreen::spawn_drones(size_t count) {
     reg_.emplace<Angle>(drone, angle(rng_));
     reg_.emplace<MaxVelocity>(drone, 500.0f);
     reg_.emplace<StayInBounds>(drone);
+    reg_.emplace<Flocking>(drone);
   }
 }
