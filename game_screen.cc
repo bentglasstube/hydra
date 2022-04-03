@@ -6,12 +6,20 @@
 #include "config.h"
 #include "geometry.h"
 
+namespace {
+  const polygon make_ship_shape(float size) {
+    return {
+      pos::polar(size, 0.0f),
+      pos::polar(size / 3.0f, M_PI / 2),
+      pos::polar(size / 3.0f, -M_PI / 2),
+    };
+  }
+}
+
 GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png"), state_(state::playing), score_(0) {
   const auto player = reg_.create();
   reg_.emplace<Color>(player, 0xd8ff00ff);
-  reg_.emplace<Triangle>(player);
-  reg_.emplace<Size>(player, 20.0f);
-
+  reg_.emplace<Polygon>(player, make_ship_shape(20.0f));
   reg_.emplace<Position>(player, pos{ kConfig.graphics.width / 2.0f, kConfig.graphics.height / 2.0f });
 
   reg_.emplace<PlayerControl>(player);
@@ -24,7 +32,10 @@ GameScreen::GameScreen() : rng_(Util::random_seed()), text_("text.png"), state_(
 
   reg_.emplace<Health>(player, 100);
 
-  spawn_drones(3);
+  spawn_drones(3, 10000.0f);
+  spawn_asteroid(200.0f);
+  spawn_asteroid(200.0f);
+  spawn_asteroid(200.0f);
 }
 
 bool GameScreen::update(const Input& input, Audio&, unsigned int elapsed) {
@@ -99,7 +110,7 @@ void GameScreen::kill_dead() {
     if (view.get<const Health>(e).health <= 0) {
       ++score_;
       reg_.destroy(e);
-      spawn_drones(2);
+      spawn_drones(2, 5000.0f);
     }
   }
 }
@@ -112,16 +123,6 @@ void GameScreen::kill_oob() {
 }
 
 namespace {
-  const polygon get_ship_shape(const pos& p, float angle, float size) {
-    return {
-      p + pos::polar(size, angle),
-      p + pos::polar(size / 3.0f, angle + M_PI / 2),
-      p + pos::polar(size / 3.0f, angle - M_PI / 2),
-    };
-  }
-
-#define ship_shape(v, e) get_ship_shape(v.get<const Position>(e).p, v.get<const Angle>(e).angle, v.get<const Size>(e).size)
-
   uint32_t color_opacity(uint32_t color, float opacity) {
     const uint32_t lsb = (uint32_t)((color & 0xff) * std::clamp(opacity, 0.0f, 1.0f));
     return (color & 0xffffff00) | lsb;
@@ -155,15 +156,18 @@ namespace {
 }
 
 void GameScreen::draw(Graphics& graphics) const {
-  draw_ships(graphics);
+  draw_polys(graphics);
   draw_bullets(graphics);
   draw_overlay(graphics);
 }
 
-void GameScreen::draw_ships(Graphics& graphics) const {
-  const auto ships = reg_.view<const Position, const Size, const Color, const Angle, const Triangle>();
-  for (const auto s : ships) {
-    draw_poly(graphics, ship_shape(ships, s), ships.get<const Color>(s).color);
+void GameScreen::draw_polys(Graphics& graphics) const {
+  const auto polys = reg_.view<const Position, const Angle, const Polygon, const Color>();
+  for (const auto p : polys) {
+    const pos t = polys.get<const Position>(p).p;
+    const float a = polys.get<const Angle>(p).angle;
+    const polygon s = polys.get<const Polygon>(p).poly.translate(t, a);
+    draw_poly(graphics, s, polys.get<const Color>(p).color);
   }
 }
 
@@ -221,19 +225,21 @@ void GameScreen::user_input(const Input& input) {
   }
 }
 
+#define get_shape(v, e) v.get<const Polygon>(e).poly.translate(v.get<const Position>(e).p, v.get<const Angle>(e).angle)
+
 void GameScreen::collision() {
-  auto players = reg_.view<const PlayerControl, const Position, const Angle, const Size, const Triangle, Health>();
+  auto players = reg_.view<const PlayerControl, const Position, const Angle, const Polygon, Health>();
   for (auto p : players) {
-    const auto ps = ship_shape(players, p);
-    auto targets = reg_.view<const Collision, const Position, const Angle, const Size, const Triangle>();
+    const auto ps = get_shape(players, p);
+    auto targets = reg_.view<const Collision, const Position, const Angle, const Polygon>();
     for (auto t : targets) {
       if (p == t) continue;
-      const auto ts = ship_shape(targets, t);
+      const auto ts = get_shape(targets, t);
 
       if (ts.intersect(ps)) {
         players.get<Health>(p).health--;
         reg_.destroy(t);
-        spawn_drones(1);
+        spawn_drones(1, 5000.0f);
       }
     }
   }
@@ -241,10 +247,10 @@ void GameScreen::collision() {
   auto bullets = reg_.view<const Bullet, const Position>();
   for (auto b : bullets) {
     const pos p = bullets.get<const Position>(b).p;
-    auto targets = reg_.view<const Collision, const Position, const Angle, const Size, Health>();
+    auto targets = reg_.view<const Collision, const Polygon, const Position, const Angle, Health>();
     for (auto t : targets) {
       if (t == bullets.get<const Bullet>(b).source) continue;
-      const auto ts = ship_shape(targets, t);
+      const auto ts = get_shape(targets, t);
       if (ts.contains(p)) {
         targets.get<Health>(t).health--;
         reg_.destroy(b);
@@ -412,20 +418,18 @@ void GameScreen::firing(float t) {
   }
 }
 
-void GameScreen::spawn_drones(size_t count) {
+void GameScreen::spawn_drones(size_t count, float distance) {
   std::uniform_real_distribution<float> angle(0, 2 * M_PI);
 
   const pos center = {kConfig.graphics.width / 2.0f, kConfig.graphics.height / 2.0f};
-  const pos p = center + pos::polar(2000.0f, angle(rng_));
+  const pos p = center + pos::polar(distance, angle(rng_));
 
   for (size_t i = 0; i < count; ++i) {
     const auto drone = reg_.create();
-
     reg_.emplace<Health>(drone, 1);
     reg_.emplace<Color>(drone, (uint32_t)0x00ffffff);
-    reg_.emplace<Triangle>(drone);
+    reg_.emplace<Polygon>(drone, make_ship_shape(15.0f));
     reg_.emplace<Position>(drone, p);
-    reg_.emplace<Size>(drone, 15.0f);
     reg_.emplace<Collision>(drone);
     reg_.emplace<Velocity>(drone, 200.0f);
     reg_.emplace<Angle>(drone, angle(rng_));
@@ -433,4 +437,35 @@ void GameScreen::spawn_drones(size_t count) {
     reg_.emplace<StayInBounds>(drone);
     reg_.emplace<Flocking>(drone);
   }
+}
+
+void GameScreen::spawn_asteroid(float distance) {
+  std::uniform_real_distribution<float> angle(0, 2 * M_PI);
+  std::uniform_int_distribution<size_t> sides(5, 11);
+  std::uniform_real_distribution<float> wiggle(-3, 3);
+  std::uniform_real_distribution<float> vel(10.0f, 50.0f);
+  std::uniform_real_distribution<float> rot(-0.3f, 0.3f);
+  std::uniform_real_distribution<float> px(0, kConfig.graphics.width);
+  std::uniform_real_distribution<float> py(0, kConfig.graphics.height);
+
+  const pos center = {kConfig.graphics.width / 2.0f, kConfig.graphics.height / 2.0f};
+  const pos p = center + pos::polar(distance, angle(rng_));
+  const pos t = {px(rng_), py(rng_)};
+
+  const size_t side_count = sides(rng_);
+  polygon poly;
+  for (size_t i = 0; i < side_count; ++i) {
+    const pos w = { wiggle(rng_), wiggle(rng_) };
+    poly.points.emplace_back(pos::polar(80.0f, 2 * M_PI * (float)i / (float)side_count) + w);
+  }
+  poly.points.emplace_back(poly.points[0]);
+
+  const auto roid = reg_.create();
+  reg_.emplace<Color>(roid, (uint32_t)0x8c856aff);
+  reg_.emplace<Polygon>(roid, poly);
+  reg_.emplace<Position>(roid, p);
+  reg_.emplace<Collision>(roid);
+  reg_.emplace<Velocity>(roid, vel(rng_));
+  reg_.emplace<Angle>(roid, (t - p).angle());
+  reg_.emplace<Health>(roid, 8);
 }

@@ -68,6 +68,7 @@ namespace {
 struct polygon {
   std::vector<pos> points;
 
+  polygon() : points() {}
   polygon(std::initializer_list<pos> p) : points(p) { points.emplace_back(points[0]); }
 
   bool intersect(const polygon& other) const {
@@ -93,6 +94,14 @@ struct polygon {
       if (lines_intersect(p, q, r, s)) ++crossings;
     }
     return crossings % 2 == 1;
+  }
+
+  polygon translate(const pos& translate, float rotate) const {
+    polygon other = {};
+    for (const auto p : points) {
+      other.points.emplace_back(translate + pos::polar(p.mag(), p.angle() + rotate));
+    }
+    return other;
   }
 
 };

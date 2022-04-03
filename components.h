@@ -5,7 +5,6 @@
 struct Health { int health = 20; };
 
 struct Position { pos p; };
-struct Size { float size = 0; };
 struct Velocity { float vel = 0; };
 struct Angle { float angle = 0; };
 
@@ -23,7 +22,7 @@ struct Collision {};
 struct Bullet { entt::entity source; };
 struct Firing { float rate = 0.175f, time = rate; };
 struct ScreenWrap {};
-struct Triangle {};
+struct Polygon { polygon poly; };
 
 struct Timer {
   float lifetime = 1.0f;

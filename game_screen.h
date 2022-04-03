@@ -44,9 +44,10 @@ class GameScreen : public Screen {
     void kill_dead();
     void kill_oob();
 
-    void draw_ships(Graphics& graphics) const;
+    void draw_polys(Graphics& graphics) const;
     void draw_bullets(Graphics& graphics) const;
     void draw_overlay(Graphics& graphics) const;
 
-    void spawn_drones(size_t count);
+    void spawn_drones(size_t count, float distance);
+    void spawn_asteroid(float distance);
 };
