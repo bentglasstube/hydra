@@ -437,6 +437,7 @@ void GameScreen::firing(float t) {
 
 void GameScreen::spawn_drones(size_t count, float distance) {
   std::uniform_real_distribution<float> angle(0, 2 * M_PI);
+  std::uniform_real_distribution<float> hue(175, 325);
 
   const pos center = {kConfig.graphics.width / 2.0f, kConfig.graphics.height / 2.0f};
   const pos p = center + pos::polar(distance, angle(rng_));
@@ -444,7 +445,7 @@ void GameScreen::spawn_drones(size_t count, float distance) {
   for (size_t i = 0; i < count; ++i) {
     const auto drone = reg_.create();
     reg_.emplace<Health>(drone, 1);
-    reg_.emplace<Color>(drone, (uint32_t)0x00ffffff);
+    reg_.emplace<Color>(drone, hsl{hue(rng_), 1.0f, 0.5f});
     reg_.emplace<Polygon>(drone, make_ship_shape(15.0f));
     reg_.emplace<Position>(drone, p);
     reg_.emplace<Collision>(drone);
@@ -474,6 +475,7 @@ entt::entity GameScreen::spawn_asteroid_at(pos p, float size) {
   std::uniform_int_distribution<size_t> sides(5, 11);
   std::uniform_real_distribution<float> wiggle(-size / 4.0f, size / 4.0f);
   std::uniform_real_distribution<float> vel(800.0f, 4000.0f);
+  std::uniform_real_distribution<float> sat(0.0f, 0.8f);
 
   const size_t side_count = sides(rng_);
   polygon poly;
@@ -486,7 +488,7 @@ entt::entity GameScreen::spawn_asteroid_at(pos p, float size) {
   const pos offset = { wiggle(rng_) * 4.0f, wiggle(rng_) * 4.0f };
 
   const auto roid = reg_.create();
-  reg_.emplace<Color>(roid, (uint32_t)0x8c856aff);
+  reg_.emplace<Color>(roid, hsl{45, sat(rng_), 0.7f});
   reg_.emplace<Polygon>(roid, poly);
   reg_.emplace<Position>(roid, p + offset);
   reg_.emplace<ScreenWrap>(roid);

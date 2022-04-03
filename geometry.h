@@ -105,3 +105,29 @@ struct polygon {
   }
 
 };
+
+namespace {
+  constexpr uint32_t make_color(float r, float g, float b) {
+    return (uint32_t)(std::round(255 * r)) << 24 |
+           (uint32_t)(std::round(255 * g)) << 16 |
+           (uint32_t)(std::round(255 * b)) << 8 |
+           0xff;
+  }
+}
+
+struct hsl {
+  float hue = 0, sat = 0, light = 0;
+
+  constexpr operator uint32_t() const {
+    const float c = (1 - std::abs(2 * light - 1)) * sat;
+    const float x = c * (1 - std::abs(std::fmod(hue / 60, 2) - 1));
+    const float m = light - c / 2.0f;
+
+    if (hue < 60)  return make_color(c + m, x + m, m);
+    if (hue < 120) return make_color(x + m, c + m, m);
+    if (hue < 180) return make_color(m, c + m, x + m);
+    if (hue < 240) return make_color(m, x + m, c + m);
+    if (hue < 300) return make_color(x + m, m, c + m);
+    else           return make_color(x + m, m, x + m);
+  };
+};
