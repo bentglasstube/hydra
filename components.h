@@ -18,6 +18,7 @@ struct Color { uint32_t color = 0x006496ff; };
 
 struct PlayerControl {};
 struct Collision {};
+struct Crumble { float size; };
 
 struct Bullet { entt::entity source; };
 struct Firing { float rate = 0.175f, time = rate; };

@@ -7,6 +7,8 @@
 #include "screen.h"
 #include "text.h"
 
+#include "geometry.h"
+
 class GameScreen : public Screen {
   public:
 
@@ -50,4 +52,5 @@ class GameScreen : public Screen {
 
     void spawn_drones(size_t count, float distance);
     void spawn_asteroid(float distance);
+    entt::entity spawn_asteroid_at(pos p, float size);
 };

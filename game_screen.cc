@@ -4,7 +4,6 @@
 
 #include "components.h"
 #include "config.h"
-#include "geometry.h"
 
 namespace {
   const polygon make_ship_shape(float size) {
@@ -105,12 +104,19 @@ namespace {
 }
 
 void GameScreen::kill_dead() {
-  auto view = reg_.view<const Health>();
+  auto view = reg_.view<const Health, const Position>();
   for (const auto e : view) {
     if (view.get<const Health>(e).health <= 0) {
+      if (reg_.all_of<Crumble>(e)) {
+        spawn_asteroid_at(view.get<const Position>(e).p, reg_.get<const Crumble>(e).size);
+        spawn_asteroid_at(view.get<const Position>(e).p, reg_.get<const Crumble>(e).size);
+        spawn_asteroid_at(view.get<const Position>(e).p, reg_.get<const Crumble>(e).size);
+      } else {
+        spawn_drones(2, 5000.0f);
+      }
+
       ++score_;
       reg_.destroy(e);
-      spawn_drones(2, 5000.0f);
     }
   }
 }
@@ -441,10 +447,6 @@ void GameScreen::spawn_drones(size_t count, float distance) {
 
 void GameScreen::spawn_asteroid(float distance) {
   std::uniform_real_distribution<float> angle(0, 2 * M_PI);
-  std::uniform_int_distribution<size_t> sides(5, 11);
-  std::uniform_real_distribution<float> wiggle(-3, 3);
-  std::uniform_real_distribution<float> vel(10.0f, 50.0f);
-  std::uniform_real_distribution<float> rot(-0.3f, 0.3f);
   std::uniform_real_distribution<float> px(0, kConfig.graphics.width);
   std::uniform_real_distribution<float> py(0, kConfig.graphics.height);
 
@@ -452,20 +454,36 @@ void GameScreen::spawn_asteroid(float distance) {
   const pos p = center + pos::polar(distance, angle(rng_));
   const pos t = {px(rng_), py(rng_)};
 
+  const auto roid = spawn_asteroid_at(p, 80.0f);
+  reg_.get<Angle>(roid).angle = (t - p).angle();
+}
+
+entt::entity GameScreen::spawn_asteroid_at(pos p, float size) {
+  std::uniform_real_distribution<float> angle(0, 2 * M_PI);
+  std::uniform_int_distribution<size_t> sides(5, 11);
+  std::uniform_real_distribution<float> wiggle(-size / 4.0f, size / 4.0f);
+  std::uniform_real_distribution<float> vel(800.0f, 4000.0f);
+
   const size_t side_count = sides(rng_);
   polygon poly;
   for (size_t i = 0; i < side_count; ++i) {
     const pos w = { wiggle(rng_), wiggle(rng_) };
-    poly.points.emplace_back(pos::polar(80.0f, 2 * M_PI * (float)i / (float)side_count) + w);
+    poly.points.emplace_back(pos::polar(size, 2 * M_PI * (float)i / (float)side_count) + w);
   }
   poly.points.emplace_back(poly.points[0]);
+
+  const pos offset = { wiggle(rng_) * 4.0f, wiggle(rng_) * 4.0f };
 
   const auto roid = reg_.create();
   reg_.emplace<Color>(roid, (uint32_t)0x8c856aff);
   reg_.emplace<Polygon>(roid, poly);
-  reg_.emplace<Position>(roid, p);
+  reg_.emplace<Position>(roid, p + offset);
+  reg_.emplace<ScreenWrap>(roid);
   reg_.emplace<Collision>(roid);
-  reg_.emplace<Velocity>(roid, vel(rng_));
-  reg_.emplace<Angle>(roid, (t - p).angle());
-  reg_.emplace<Health>(roid, 8);
+  reg_.emplace<Velocity>(roid, vel(rng_) / size);
+  reg_.emplace<Angle>(roid, angle(rng_));
+  reg_.emplace<Health>(roid, (int)size / 10);
+  if (size > 10.0f) reg_.emplace<Crumble>(roid, size / 2.0f);
+
+  return roid;
 }
