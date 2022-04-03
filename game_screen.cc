@@ -54,6 +54,12 @@ bool GameScreen::update(const Input& input, Audio& audio, unsigned int elapsed) 
 
       user_input(input);
       firing(audio, t);
+
+      if (reg_.view<PlayerControl>().size() == 0) {
+        // player must be dead
+        state_ = state::lost;
+        audio.play_sample("dead.wav");
+      }
     }
 
     // movement systems
@@ -72,10 +78,6 @@ bool GameScreen::update(const Input& input, Audio& audio, unsigned int elapsed) 
     kill_dead(audio);
     kill_oob();
 
-    if (reg_.view<PlayerControl>().size() == 0) {
-      // player must be dead
-      state_ = state::lost;
-    }
   }
 
   return true;
