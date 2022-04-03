@@ -287,30 +287,36 @@ void GameScreen::flocking() {
     float& vel = view.get<Velocity>(e).vel;
 
     size_t count = 0;
-    pos center, flock, avoid;
+    pos center, flock;
 
     auto nearby = reg_.view<const Flocking, const Position, const Velocity, const Angle>();
-    for (const auto other : nearby) {
-      if (other == e) continue;
-      pos p = nearby.get<const Position>(other).p;
-      float d = p.dist2(boid);
+    for (const auto o : nearby) {
+      if (o == e) continue;
+      pos p = nearby.get<const Position>(o).p;
+      const float d = p.dist2(boid);
 
       // close enough to see
       if (d < 75.0f * 75.0f) {
         ++count;
         center += p;
-        flock += pos::polar(nearby.get<const Velocity>(other).vel, nearby.get<const Angle>(other).angle);
+        flock += pos::polar(nearby.get<const Velocity>(o).vel, nearby.get<const Angle>(o).angle);
       }
+    }
 
-      // too close
-      if (d < 20.0f * 20.0f) avoid += boid - p;
+    // avoid anything too close
+    pos avoid;
+    auto obstacles = reg_.view<const Collision, const Position>();
+    for (const auto o : obstacles) {
+      if (o == e) continue;
+      const pos p = obstacles.get<const Position>(o).p;
+      if (p.dist2(boid) < 50.0f * 50.0f) avoid += boid - p;
     }
 
     if (count > 0) {
       center /= count;
       flock /= count;
 
-      const pos delta = (center - boid) * 0.005f + avoid * 0.05f + flock * 0.05f;
+      const pos delta = (center - boid) * 0.005f + avoid * 0.25f + flock * 0.05f;
       const pos v = pos::polar(vel, angle) + delta;
 
       // only set the target direction otherwise the ships will awkwardly speed up and slow down
@@ -396,6 +402,7 @@ void GameScreen::firing(float t) {
 
       const auto bullet = reg_.create();
       reg_.emplace<Bullet>(bullet, s);
+      reg_.emplace<Collision>(bullet);
       reg_.emplace<Position>(bullet, p + pos::polar(5, a));
       reg_.emplace<Angle>(bullet, a);
       reg_.emplace<Velocity>(bullet, sources.get<const Velocity>(s).vel + 250.0f);
