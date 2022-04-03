@@ -98,7 +98,7 @@ struct polygon {
 
   polygon translate(const pos& translate, float rotate) const {
     polygon other = {};
-    for (const auto p : points) {
+    for (const auto& p : points) {
       other.points.emplace_back(translate + pos::polar(p.mag(), p.angle() + rotate));
     }
     return other;
@@ -107,7 +107,7 @@ struct polygon {
 };
 
 namespace {
-  constexpr uint32_t make_color(float r, float g, float b) {
+  uint32_t make_color(float r, float g, float b) {
     return (uint32_t)(std::round(255 * r)) << 24 |
            (uint32_t)(std::round(255 * g)) << 16 |
            (uint32_t)(std::round(255 * b)) << 8 |
@@ -118,7 +118,7 @@ namespace {
 struct hsl {
   float hue = 0, sat = 0, light = 0;
 
-  constexpr operator uint32_t() const {
+  operator uint32_t() const {
     const float c = (1 - std::abs(2 * light - 1)) * sat;
     const float x = c * (1 - std::abs(std::fmod(hue / 60, 2) - 1));
     const float m = light - c / 2.0f;
