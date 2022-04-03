@@ -413,13 +413,13 @@ void GameScreen::firing(float t) {
 }
 
 void GameScreen::spawn_drones(size_t count) {
-  std::uniform_int_distribution<int> px(0, kConfig.graphics.width);
-  std::uniform_int_distribution<int> py(0, kConfig.graphics.height);
   std::uniform_real_distribution<float> angle(0, 2 * M_PI);
+
+  const pos center = {kConfig.graphics.width / 2.0f, kConfig.graphics.height / 2.0f};
+  const pos p = center + pos::polar(2000.0f, angle(rng_));
 
   for (size_t i = 0; i < count; ++i) {
     const auto drone = reg_.create();
-    const pos p = { (float)px(rng_), (float)py(rng_) };
 
     reg_.emplace<Health>(drone, 1);
     reg_.emplace<Color>(drone, (uint32_t)0x00ffffff);
