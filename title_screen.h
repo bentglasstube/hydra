@@ -4,6 +4,7 @@
 #include "spritemap.h"
 #include "text.h"
 
+#include "dialog.h"
 #include "game_screen.h"
 #include "space.h"
 
@@ -23,7 +24,11 @@ class TitleScreen : public Screen {
     Text text_;
     SpriteMap title_;
     Space space_;
+    Dialog dialog_;
 
-    float counter_;
+    float counter_, story_timeout_;
+    int story_text_ = 0;
+
+    void load_story_text();
 
 };

@@ -40,6 +40,7 @@ cc_library(
         "@entt//:entt",
         ":components",
         ":config",
+        ":dialog",
         ":geometry",
         ":space",
     ],
@@ -64,5 +65,15 @@ cc_library(
         "@libgam//:graphics",
         ":config",
         ":geometry",
+    ],
+)
+
+cc_library(
+    name = "dialog",
+    srcs = ["dialog.cc"],
+    hdrs = ["dialog.h"],
+    deps = [
+        "@libgam//:text",
+        ":config",
     ],
 )
