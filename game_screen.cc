@@ -14,6 +14,17 @@ namespace {
       pos::polar(size / 3.0f, -M_PI / 2),
     };
   }
+
+  const polygon make_saucer_shape(float size) {
+    return {
+      pos::polar(size, 0.0f),
+      pos::polar(size / 3.0f, M_PI / 4),
+      pos::polar(size / 3.0f, 3 * M_PI / 4),
+      pos::polar(size, M_PI),
+      pos::polar(size / 3.0f, 5 * M_PI / 4),
+      pos::polar(size / 3.0f, 7 * M_PI / 4),
+    };
+  }
 }
 
 GameScreen::GameScreen() :
@@ -140,7 +151,7 @@ void GameScreen::kill_dead(Audio& audio) {
 
       explosion(p, view.get<const Color>(e).color);
       audio.play_random_sample("boom.wav", 5);
-      if (reg_.all_of<Killed>(e)) {
+      if (reg_.all_of<KilledByPlayer>(e)) {
         score_ += std::floor(100 * std::exp(combo_++ / 10.0f));
         if (combo_ > best_combo_) best_combo_ = combo_;
       }
@@ -372,11 +383,14 @@ void GameScreen::collision(Audio& audio) {
     const pos p = bullets.get<const Position>(b).p;
     auto targets = reg_.view<const Collision, const Polygon, const Position, const Angle, Health>();
     for (auto t : targets) {
-      if (t == bullets.get<const Bullet>(b).source) continue;
+      const auto s = bullets.get<const Bullet>(b).source;
+      if (t == s) continue;
       const auto ts = get_shape(targets, t);
       if (ts.contains(p)) {
         int& health = targets.get<Health>(t).health;
-        if (--health == 0) reg_.emplace_or_replace<Killed>(t);
+        if (--health == 0 && reg_.all_of<PlayerControl>(s)) {
+          reg_.emplace_or_replace<KilledByPlayer>(t);
+        }
         audio.play_random_sample("hit.wav", 5);
         reg_.destroy(b);
         break;
@@ -544,13 +558,16 @@ void GameScreen::firing(Audio& audio, float t) {
     if (gun.time > gun.rate) {
       gun.time -= gun.rate;
       const pos p = sources.get<const Position>(s).p;
+      if (oob(p)) continue;
+
       const float a = sources.get<const Angle>(s).angle;
+      std::uniform_real_distribution<float> spread(-gun.spread, gun.spread);
 
       const auto bullet = reg_.create();
       reg_.emplace<Bullet>(bullet, s);
       reg_.emplace<Collision>(bullet);
       reg_.emplace<Position>(bullet, p + pos::polar(5, a));
-      reg_.emplace<Angle>(bullet, a);
+      reg_.emplace<Angle>(bullet, a + spread(rng_));
       reg_.emplace<Velocity>(bullet, sources.get<const Velocity>(s).vel + 350.0f);
       reg_.emplace<MaxVelocity>(bullet);
       reg_.emplace<KillOffScreen>(bullet);
@@ -614,10 +631,13 @@ void GameScreen::spawn_drones(size_t count, float distance) {
   std::uniform_real_distribution<float> angle(0, 2 * M_PI);
   std::uniform_real_distribution<float> wiggle(-0.1, 0.1);
   std::uniform_real_distribution<float> hue(175, 325);
+  std::uniform_real_distribution<float> chance(0, 1);
 
   const pos center = {kConfig.graphics.width / 2.0f, kConfig.graphics.height / 2.0f};
   const pos p = center + pos::polar(distance, angle(rng_));
   const uint32_t c = hsl{hue(rng_), 1.0f, 0.5f};
+
+  if (count >= 10) spawn_saucer(distance);
 
   for (size_t i = 0; i < count; ++i) {
     const auto drone = reg_.create();
@@ -631,7 +651,29 @@ void GameScreen::spawn_drones(size_t count, float distance) {
     reg_.emplace<MaxVelocity>(drone, 500.0f);
     reg_.emplace<StayInBounds>(drone);
     reg_.emplace<Flocking>(drone);
+
+    if (chance(rng_) < 0.05f) reg_.emplace<Firing>(drone, 2.5f, (float)(M_PI / 4.0f));
   }
+}
+
+void GameScreen::spawn_saucer(float distance) {
+  std::uniform_real_distribution<float> angle(0, 2 * M_PI);
+  std::uniform_real_distribution<float> px(0, kConfig.graphics.width);
+  std::uniform_real_distribution<float> py(0, kConfig.graphics.height);
+
+  const pos center = {kConfig.graphics.width / 2.0f, kConfig.graphics.height / 2.0f};
+  const pos p = center + pos::polar(distance, angle(rng_));
+  const pos t = { px(rng_), py(rng_) };
+
+  const auto saucer = reg_.create();
+  reg_.emplace<Health>(saucer, 5);
+  reg_.emplace<Color>(saucer, (uint32_t)0xffd800ff);
+  reg_.emplace<Polygon>(saucer, make_saucer_shape(35.0f));
+  reg_.emplace<Position>(saucer, p);
+  reg_.emplace<Collision>(saucer);
+  reg_.emplace<Velocity>(saucer, 150.0f);
+  reg_.emplace<Angle>(saucer, (t - p).angle());
+  reg_.emplace<Firing>(saucer, 0.05f, (float)M_PI);
 }
 
 void GameScreen::spawn_asteroid(float distance) {

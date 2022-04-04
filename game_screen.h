@@ -63,6 +63,7 @@ class GameScreen : public Screen {
     void draw_overlay(Graphics& graphics) const;
 
     void spawn_drones(size_t count, float distance);
+    void spawn_saucer(float distance);
     void spawn_asteroid(float distance);
     entt::entity spawn_asteroid_at(pos p, float size);
     void explosion(const pos& p, uint32_t color);
