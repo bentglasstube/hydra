@@ -114,7 +114,9 @@ bool GameScreen::update(const Input& input, Audio& audio, unsigned int elapsed) 
   spin(t);
   steering(t);
   flocking();
-  stay_in_bounds();
+  seek_player();
+  return_to_field();
+  bounce_walls();
   max_velocity();
   movement(t);
 
@@ -486,10 +488,37 @@ void GameScreen::flocking() {
   }
 }
 
-void GameScreen::stay_in_bounds() {
-  const float buffer = 25.0f;
+void GameScreen::seek_player() {
+  auto view = reg_.view<const SeekPlayer, const Position, TargetDir>();
+  auto players = reg_.view<const PlayerControl, const Position>();
+  for (const auto e : view) {
+    const float r = view.get<const SeekPlayer>(e).range;
+    const pos p = view.get<const Position>(e).p;
+    float& t = view.get<TargetDir>(e).target;
 
-  auto view = reg_.view<const StayInBounds, const Position, Velocity, Angle>();
+    for (const auto pl : players) {
+      const pos pp = players.get<const Position>(pl).p;
+      if (pp.dist2(p) < r * r) {
+        t = (pp - p).angle();
+        break;
+      }
+    }
+  }
+}
+
+void GameScreen::return_to_field() {
+  const pos center = { (float)kConfig.graphics.width / 2.0f, (float)kConfig.graphics.height / 2.0f };
+  auto view = reg_.view<const ReturnToField, const Position, TargetDir>();
+  for (const auto e : view) {
+    const pos p = view.get<const Position>(e).p;
+    if (oob(p)) {
+      view.get<TargetDir>(e).target = (center - p).angle();
+    }
+  }
+}
+
+void GameScreen::bounce_walls() {
+  auto view = reg_.view<const BounceWalls, const Position, Velocity, Angle>();
   for (const auto e : view) {
     const pos p = view.get<const Position>(e).p;
     float& vel = view.get<Velocity>(e).vel;
@@ -497,10 +526,10 @@ void GameScreen::stay_in_bounds() {
 
     pos v = pos::polar(vel, angle);
 
-    if (p.x < buffer) v.x = std::abs(v.x);
-    if (p.x > kConfig.graphics.width - buffer) v.x = -std::abs(v.x);
-    if (p.y < buffer) v.y = std::abs(v.y);
-    if (p.y > kConfig.graphics.height - buffer) v.y = -std::abs(v.y);
+    if (p.x < 0) v.x = std::abs(v.x);
+    if (p.x > kConfig.graphics.width) v.x = -std::abs(v.x);
+    if (p.y < 0) v.y = std::abs(v.y);
+    if (p.y > kConfig.graphics.height) v.y = -std::abs(v.y);
 
     vel = v.mag();
     angle = v.angle();
@@ -649,7 +678,8 @@ void GameScreen::spawn_drones(size_t count, float distance) {
     reg_.emplace<Velocity>(drone, 200.0f);
     reg_.emplace<Angle>(drone, (center - p).angle() + wiggle(rng_));
     reg_.emplace<MaxVelocity>(drone, 500.0f);
-    reg_.emplace<StayInBounds>(drone);
+    reg_.emplace<SeekPlayer>(drone);
+    reg_.emplace<ReturnToField>(drone);
     reg_.emplace<Flocking>(drone);
 
     if (chance(rng_) < 0.05f) reg_.emplace<Firing>(drone, 2.5f, (float)(M_PI / 4.0f));
@@ -736,7 +766,7 @@ void GameScreen::explosion(const pos& p, uint32_t color) {
     reg_.emplace<Color>(pt, color);
     reg_.emplace<Velocity>(pt, vel(rng_));
     reg_.emplace<Angle>(pt, angle(rng_));
-    reg_.emplace<StayInBounds>(pt);
+    reg_.emplace<BounceWalls>(pt);
   }
 }
 

@@ -43,5 +43,7 @@ struct Particle {};
 struct HasDrop {};
 struct KilledByPlayer {};
 struct KillOffScreen {};
-struct StayInBounds {};
+struct BounceWalls {};
+struct ReturnToField {};
+struct SeekPlayer { float range = 25.0f; };
 struct Flocking {};
