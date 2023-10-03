@@ -1,0 +1,29 @@
+app-id: org.eatabrick.Hydra
+runtime: org.freedesktop.Platform
+runtime-version: '22.08'
+sdk: org.freedesktop.Sdk
+command: /app/org.eatabrick.Hydra
+finish-args:
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --socket=pulseaudio
+  - --device=dri
+  - --device=all
+modules:
+  - name: Hydra
+    sources:
+      - type: git
+        path: .
+        branch: main
+    buildsystem: simple
+    build-commands:
+      - make
+      - install -D launcher /app/org.eatabrick.Hydra
+      - install -D output/hydra /app/game
+      - cp -R content/ /app/content/
+        # - install -D hydra.metainfo.xml /app/share/metainfo/org.eatabrick.Hydra.metainfo.xml
+      - install -D icon.png /app/share/icons/hicolor/256x256/apps/org.eatabrick.Hydra.png
+        #- appstreamcli make-desktop-file hydra.metainfo.xml hydra.desktop
+      - install -D hydra.desktop /app/share/applications/org.eatabrick.Hydra.desktop
+cleanup:
+  - '/app/content/BUILD'

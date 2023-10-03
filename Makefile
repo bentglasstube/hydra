@@ -32,7 +32,6 @@ ifeq ($(UNAME), Windows)
 	EXTRA=$(BUILDDIR)/icon.res.o
 endif
 ifeq ($(UNAME), Linux)
-	PACKAGE=$(NAME)-linux-$(VERSION).AppImage
 	LDFLAGS=-static-libstdc++ -static-libgcc
 	LDLIBS=`$(PKG_CONFIG) sdl2 SDL2_mixer SDL2_image --cflags --libs` -Wl,-Bstatic
 endif
@@ -110,27 +109,12 @@ $(NAME).app: $(EXECUTABLE) launcher $(CONTENT) Info.plist
 	cp -R /Library/Frameworks/SDL2_mixer.framework $(NAME).app/Contents/Frameworks/SDL2_mixer.framework
 	cp -R /Library/Frameworks/SDL2_image.framework $(NAME).app/Contents/Frameworks/SDL2_image.framework
 
-$(NAME)-linux-$(VERSION).AppDir: $(EXECUTABLE) $(CONTENT) AppRun icon.png $(NAME).desktop
-	rm -rf $@
-	mkdir -p $@/usr/{bin,lib}
-	mkdir -p $@/content
-	cp $(EXECUTABLE) $@/usr/bin
-	cp AppRun $@/.
-	cp $(NAME).desktop $@/.
-	cp icon.png $@/.
-	cp $(CONTENT) $@/content/.
-	cp /usr/lib/libSDL2{,_image,_mixer}-2.0.so.0 $@/usr/lib/.
-
-$(NAME)-linux-$(VERSION).AppImage: $(NAME)-linux-$(VERSION).AppDir
-	ARCH=x86_64 appimagetool $< $@
-
 clean:
 	rm -rf $(BUILDDIR)
 
 distclean: clean
 	rm -rf *.app *.dmg *.zip
-	rm -rf *.AppDir *.AppImage
 	rm -rf *.html *.js *.data *.wasm
 	rm -rf *-web-*/ *output/
 
-.PHONY: all echo clean distclean run package wasm web
+.PHONY: all echo clean distclean run package wasm web install

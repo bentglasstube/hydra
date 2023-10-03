@@ -4,6 +4,7 @@ bazel-*
 /*.app
 /*.AppImage
 /*.AppDir
+/.flatpak-builder/
 /*.data
 /*.html
 /*.js

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.eatabrick.hydra</id>
+
+  <name>Hydra</name>
+  <summary>A asteroids-like shooter game</summary>
+
+  <metadata_license>CC-BY-4.0</metadata_license>
+  <project_license>MIT</project_license>
+
+  <recommends>
+    <display_length compare="ge">1280</display_length>
+  </recommends>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+    <control>gamepad</control>
+  </supports>
+
+  <description>
+    <p>
+      You are the last human survivor of an alien invasion. You have fled Earth in your spaceship and are being pursued by the swarming drones. While navigating an asteroid field, your ship was hit, destroying your main engine. You have only your thrusters left and can no longer run.
+    </p>
+    <p>
+      Trapped in the asteroid field, you make your last stand. Each drone you destroy makes more appear like the heads of the mythical Hydra. You can’t win, but you can do as much damage as possible before you go.
+    </p>
+  </description>
+
+  <launchable type="desktop-id">org.eatabrick.hydra.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://static.jam.host/raw/939/z/49fc2.png</image>
+      <caption>Gameplay</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://static.jam.host/raw/939/z/49fe0.png</image>
+      <caption>Gameplay</caption>
+    </screenshot>
+  </screenshots>
+
+  <icon type="stock">org.eatabrick.hydra</icon>
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-cartoon">mild</content_attribute>
+  </content_rating>
+
+  <categories>
+    <category>Game</category>
+    <category>ArcadeGame</category>
+  </categories>
+
+  <provides>
+    <binary>org.eatabrick.hydra</binary>
+  </provides>
+  <releases>
+    <release version="1.0" date="2022-04-03" />
+  </releases>
+</component>
