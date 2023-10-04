@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Hydra
-Exec=org.eatabrick.hydra
+Exec=org.eatabrick.Hydra
 Type=Application
-Icon=org.eatabrick.hydra
+Icon=org.eatabrick.Hydra
 Categories=Game;ArcadeGame
